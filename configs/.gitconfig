@@ -1,0 +1,37 @@
+[core]
+    editor = code --wait
+    autocrlf = input
+    pager = bat --style=plain
+
+[init]
+    defaultBranch = main
+
+[pull]
+    rebase = true
+
+[push]
+    autoSetupRemote = true
+
+[merge]
+    conflictstyle = zdiff3
+
+[diff]
+    algorithm = histogram
+
+[alias]
+    st = status
+    co = checkout
+    br = branch
+    ci = commit
+    lg = log --oneline --graph --decorate
+    unstage = reset HEAD --
+    last = log -1 HEAD
+    amend = commit --amend --no-edit
+
+# 기본값: 개인 계정
+[include]
+    path = ~/.gitconfig-personal
+
+# ~/work/ 하위에서만 회사 계정으로 덮어쓰기
+[includeIf "gitdir:~/work/"]
+    path = ~/.gitconfig-work
