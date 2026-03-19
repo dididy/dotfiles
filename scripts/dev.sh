@@ -170,4 +170,17 @@ else
   fi
 fi
 
+# ── portless (port management) ──
+info "Checking portless..."
+if $DRY_RUN; then
+  info "[dry-run] Skipping portless install"
+else
+  if ! command -v portless &>/dev/null; then
+    info "Installing portless (global)"
+    npm install -g portless 2>/dev/null || info "⚠️  portless install failed — check manually"
+  else
+    info "portless already installed"
+  fi
+fi
+
 info "Dev environment setup done"

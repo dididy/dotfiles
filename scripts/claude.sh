@@ -35,6 +35,7 @@ fi
 
 SKILL_REPOS=(
   "dididy/e2e-skills"
+  "dididy/ui-skills"
   "blader/humanizer"
   "forrestchang/andrej-karpathy-skills"
   "obra/superpowers"

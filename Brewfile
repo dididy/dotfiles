@@ -18,6 +18,7 @@ brew "mkcert"
 brew "whisper-cpp"
 brew "tmux"                     # terminal multiplexer
 brew "vercel-cli"               # Vercel deployment CLI
+brew "postgresql"               # PostgreSQL database
 brew "mas"                      # Mac App Store CLI
 
 
