@@ -37,6 +37,8 @@ cd ~/dotfiles
 - Hooks — skill-eval (forced skill activation), hone-english (grammar feedback + vault logging)
 - MCP — chrome-devtools (browser control via Chrome DevTools Protocol)
 
+**Shared agent config** — `~/.agent/AGENT.md` with shared rules, symlinked to both `~/.claude/` (via `@` import) and `~/.cursor/rules/`.
+
 **Dotfiles symlinks** — zshrc, gitconfig, starship.toml, Claude Code settings, skill-eval hook.
 
 **hone-english** — cloned separately to `~/Documents/hone-english` (Claude Code hooks for English learning).
@@ -59,7 +61,8 @@ dotfiles/
     ├── .gitconfig
     ├── .gitconfig-personal
     ├── .gitconfig-work
-    ├── CLAUDE.md           # Claude Code instructions
+    ├── AGENT.md            # shared agent rules (Claude + Cursor)
+    ├── CLAUDE.md           # Claude Code instructions (imports AGENT.md)
     ├── claude-settings.json
     ├── rtk-config.toml
     ├── starship.toml

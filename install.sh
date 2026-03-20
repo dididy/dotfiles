@@ -104,6 +104,11 @@ link_file "$DOTFILES_DIR/configs/.gitconfig-work"      "$HOME/.gitconfig-work"
 mkdir -p "$HOME/.config"
 link_file "$DOTFILES_DIR/configs/starship.toml"        "$HOME/.config/starship.toml"
 
+# shared agent config
+mkdir -p "$HOME/.agent"
+link_file "$DOTFILES_DIR/configs/AGENT.md"             "$HOME/.agent/AGENT.md"
+
+# Claude Code
 mkdir -p "$HOME/.claude/hooks" "$HOME/.claude/plugins"
 if $DRY_RUN; then
   info "[dry-run] Generate ~/.claude/settings.json (HONE_DIR=$HONE_DIR)"
@@ -114,6 +119,10 @@ fi
 link_file "$DOTFILES_DIR/configs/CLAUDE.md"            "$HOME/.claude/CLAUDE.md"
 link_file "$DOTFILES_DIR/configs/hooks/skill-eval.sh"  "$HOME/.claude/hooks/skill-eval.sh"
 chmod +x "$DOTFILES_DIR/configs/hooks/skill-eval.sh"
+
+# Cursor
+mkdir -p "$HOME/.cursor/rules"
+link_file "$DOTFILES_DIR/configs/AGENT.md"              "$HOME/.cursor/rules/agent.md"
 
 RTK_CONFIG_DIR="$HOME/Library/Application Support/rtk"
 mkdir -p "$RTK_CONFIG_DIR"
