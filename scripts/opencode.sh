@@ -41,9 +41,10 @@ elif [ ! -f "$SECRETS_FILE" ]; then
 #
 # Discord notify plugin (configs/opencode/plugins/discord-notify.ts):
 #DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..."
+#DISCORD_USER_ID="123456789012345678"
 ENV
   chmod 600 "$SECRETS_FILE"
-  warn "Scaffolded $SECRETS_FILE — fill in DISCORD_WEBHOOK_URL"
+  warn "Scaffolded $SECRETS_FILE — fill in DISCORD_WEBHOOK_URL and optionally DISCORD_USER_ID"
 else
   current_perms=$(stat -f '%Lp' "$SECRETS_FILE")
   if [ "$current_perms" != "600" ]; then
@@ -104,5 +105,5 @@ fi
 info "opencode setup done"
 warn "npm plugins in opencode.json auto-install on first invocation (Bun cache)."
 warn "Local plugins live at configs/opencode/plugins/ and load directly via Bun."
-warn "After setting DISCORD_WEBHOOK_URL, restart the LaunchAgent:"
+warn "After setting DISCORD_WEBHOOK_URL/DISCORD_USER_ID, restart the LaunchAgent:"
 warn "  launchctl kickstart -k gui/\$(id -u)/com.user.opencode-web"
