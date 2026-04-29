@@ -28,7 +28,11 @@ type DiscordEmbed = {
 }
 
 type DiscordWebhookBody = {
+  content: string
   embeds: DiscordEmbed[]
+  allowed_mentions?: {
+    users: string[]
+  }
 }
 
 type RuntimeInput = {
@@ -106,19 +110,30 @@ export function createDiscordWebhookBody(input: {
   title: string
   summary?: string
   url?: string
+  userID?: string
 }): DiscordWebhookBody {
+  const title = truncate(input.title, TITLE_MAX_LENGTH)
   const embed: DiscordEmbed = {
-    title: truncate(input.title, TITLE_MAX_LENGTH),
+    title,
     color: COLOR_GREEN,
   }
   if (input.url) embed.url = input.url
   if (input.summary) embed.description = truncate(input.summary, DESCRIPTION_MAX_LENGTH)
 
-  return { embeds: [embed] }
+  if (input.userID) {
+    return {
+      content: `<@${input.userID}> ${title}`,
+      embeds: [embed],
+      allowed_mentions: { users: [input.userID] },
+    }
+  }
+
+  return { content: title, embeds: [embed] }
 }
 
 const plugin: Plugin = async (input) => {
   const webhookUrl = process.env.DISCORD_WEBHOOK_URL?.trim()
+  const userID = process.env.DISCORD_USER_ID?.trim()
   const runtimeInput = input as unknown as RuntimeInput
   const client = runtimeInput.client
   const reachableServerUrl = externallyReachable(runtimeInput.serverUrl)
@@ -179,6 +194,7 @@ const plugin: Plugin = async (input) => {
           title: headline,
           summary,
           url,
+          userID,
         })
 
         const res = await fetch(webhookUrl, {
