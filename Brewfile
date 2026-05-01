@@ -30,6 +30,7 @@ brew "google-authenticator-libpam"  # TOTP for SSH 2FA
 brew "qrencode"                     # QR code for TOTP setup
 brew "mosh"                         # mobile shell (SSH with auto-reconnect)
 brew "anomalyco/tap/opencode"   # AI coding agent (third-party tap; tracks latest)
+brew "code-server"              # VS Code in browser (auto-launched via LaunchAgent)
 brew "mas"                      # Mac App Store CLI
 
 

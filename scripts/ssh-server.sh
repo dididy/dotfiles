@@ -4,21 +4,12 @@ TAG="ssh"
 # shellcheck source=scripts/lib/common.sh
 source "$(cd "$(dirname "$0")" && pwd)/lib/common.sh"
 
-# ── Enable Remote Login ──
-info "Enabling macOS Remote Login (SSH server)..."
-if $DRY_RUN; then
-  info "[dry-run] sudo systemsetup -setremotelogin on"
-else
-  REMOTE_LOGIN=$(sudo systemsetup -getremotelogin 2>/dev/null | awk '{print $NF}')
-  if [ "$REMOTE_LOGIN" = "On" ]; then
-    info "Remote Login already enabled"
-  else
-    sudo systemsetup -setremotelogin on
-    info "Remote Login enabled"
-  fi
-fi
-
 # ── Generate host keys if missing ──
+# Note: we do NOT enable Remote Login here. The hardened config has to be
+# in place AND we have to know there's an authorized_keys entry (or the
+# user has explicitly opted into a temporary password-auth window) before
+# the listener goes live, so an attacker on the LAN can't race a stock
+# config-and-no-keys window.
 if ! $DRY_RUN; then
   if [ ! -f /etc/ssh/ssh_host_ed25519_key ]; then
     info "Generating SSH host keys..."
@@ -51,15 +42,10 @@ else
   info "Installed: hardened.conf -> $HARDENED_CONF (AllowUsers=$(whoami))"
 fi
 
-# ── Validate and reload ──
+# ── Validate config (do NOT reload yet — Remote Login may still be off) ──
 if ! $DRY_RUN; then
   info "Validating sshd config..."
-  if sudo sshd -t; then
-    info "Config valid, reloading sshd..."
-    sudo launchctl kickstart -k system/com.openssh.sshd 2>/dev/null || \
-      sudo launchctl stop com.openssh.sshd 2>/dev/null || true
-    info "sshd reloaded"
-  else
+  if ! sudo sshd -t; then
     warn "sshd config validation failed (see error above)"
     warn "Reverting hardened config..."
     sudo rm -f "$HARDENED_CONF"
@@ -69,6 +55,50 @@ if ! $DRY_RUN; then
     fi
     exit 1
   fi
+fi
+
+# ── Decide whether Remote Login is safe to enable ──
+# Only flip the listener on once at least one of:
+#   (a) authorized_keys exists and is non-empty (key-only, key + TOTP), or
+#   (b) the user explicitly opts into a temporary password-auth window and
+#       takes responsibility for locking it back down right after.
+HAS_AUTHORIZED_KEYS=false
+if [ -s "$HOME/.ssh/authorized_keys" ]; then
+  HAS_AUTHORIZED_KEYS=true
+fi
+
+ENABLE_REMOTE_LOGIN=false
+TEMP_PASSWORD_FLOW=false
+
+if $HAS_AUTHORIZED_KEYS; then
+  ENABLE_REMOTE_LOGIN=true
+elif ! $DRY_RUN; then
+  echo ""
+  warn "No authorized_keys found — remote devices can't connect yet."
+  warn "Enabling Remote Login now would expose sshd before any key is in place."
+  read -rp "Temporarily enable password auth so you can ssh-copy-id? (y/N) " enable_pw
+  if [[ "$enable_pw" == [yY] ]]; then
+    ENABLE_REMOTE_LOGIN=true
+    TEMP_PASSWORD_FLOW=true
+  else
+    warn "Skipping Remote Login enable. Run this script again after you've"
+    warn "  populated ~/.ssh/authorized_keys (e.g. via Tailscale SSH or"
+    warn "  by pasting your public key into the file directly)."
+  fi
+fi
+
+# ── Enable Remote Login + reload (only when safe) ──
+if $ENABLE_REMOTE_LOGIN && ! $DRY_RUN; then
+  REMOTE_LOGIN=$(sudo systemsetup -getremotelogin 2>/dev/null | awk '{print $NF}')
+  if [ "$REMOTE_LOGIN" != "On" ]; then
+    info "Enabling macOS Remote Login..."
+    sudo systemsetup -setremotelogin on
+  else
+    info "Remote Login already enabled"
+  fi
+  info "Reloading sshd..."
+  sudo launchctl kickstart -k system/com.openssh.sshd 2>/dev/null || \
+    sudo launchctl stop com.openssh.sshd 2>/dev/null || true
 fi
 
 # ── Firewall check ──
@@ -85,33 +115,27 @@ else
   fi
 fi
 
-# ── Initial key setup (temporary password auth) ──
-if ! $DRY_RUN; then
-  if [ ! -f "$HOME/.ssh/authorized_keys" ] || [ ! -s "$HOME/.ssh/authorized_keys" ]; then
-    echo ""
-    warn "No authorized_keys found — remote devices can't connect yet."
-    read -rp "Temporarily enable password auth for ssh-copy-id? (y/N) " enable_pw
-    if [[ "$enable_pw" == [yY] ]]; then
-      # Ensure password auth is locked down on exit/interrupt
-      lockdown() {
-        sudo sed -i '' 's/PasswordAuthentication yes/PasswordAuthentication no/' "$HARDENED_CONF"
-        sudo sed -i '' 's/AuthenticationMethods any/AuthenticationMethods publickey,keyboard-interactive:pam/' "$HARDENED_CONF"
-        sudo launchctl kickstart -k system/com.openssh.sshd 2>/dev/null || true
-        info "Password auth disabled — key-only access restored"
-      }
-      trap lockdown EXIT INT TERM
+# ── Temporary password-auth window (only if user opted in above) ──
+if $TEMP_PASSWORD_FLOW && ! $DRY_RUN; then
+  # Ensure password auth is locked down on exit/interrupt no matter what.
+  lockdown() {
+    sudo sed -i '' 's/PasswordAuthentication yes/PasswordAuthentication no/' "$HARDENED_CONF"
+    sudo sed -i '' 's/AuthenticationMethods any/AuthenticationMethods publickey,keyboard-interactive:pam/' "$HARDENED_CONF"
+    sudo launchctl kickstart -k system/com.openssh.sshd 2>/dev/null || true
+    info "Password auth disabled — key-only access restored"
+  }
+  trap lockdown EXIT INT TERM
 
-      sudo sed -i '' 's/PasswordAuthentication no/PasswordAuthentication yes/' "$HARDENED_CONF"
-      sudo sed -i '' 's/AuthenticationMethods publickey,keyboard-interactive:pam/AuthenticationMethods any/' "$HARDENED_CONF"
-      sudo launchctl kickstart -k system/com.openssh.sshd 2>/dev/null || true
-      info "Password auth enabled temporarily"
-      warn "From remote device, run: ssh-copy-id $(whoami)@$(curl -s ifconfig.me 2>/dev/null || echo 'YOUR_IP')"
-      echo ""
-      read -rp "Press Enter after you've copied the key to lock it back down..."
-      lockdown
-      trap - EXIT INT TERM
-    fi
-  fi
+  sudo sed -i '' 's/PasswordAuthentication no/PasswordAuthentication yes/' "$HARDENED_CONF"
+  sudo sed -i '' 's/AuthenticationMethods publickey,keyboard-interactive:pam/AuthenticationMethods any/' "$HARDENED_CONF"
+  sudo launchctl kickstart -k system/com.openssh.sshd 2>/dev/null || true
+  info "Password auth enabled temporarily"
+  warn "From remote device, run: ssh-copy-id $(whoami)@<your-tailscale-ip-or-hostname>"
+  warn "  (avoid pasting your public WAN IP here — prefer the tailnet address)"
+  echo ""
+  read -rp "Press Enter after you've copied the key to lock it back down..."
+  lockdown
+  trap - EXIT INT TERM
 fi
 
 echo ""

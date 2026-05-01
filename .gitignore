@@ -3,4 +3,3 @@ configs/.gitconfig-personal
 configs/.gitconfig-work
 .sisyphus/
 *.secrets.env
-.opencode-secrets.env

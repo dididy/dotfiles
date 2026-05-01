@@ -73,11 +73,28 @@ for url_args in "${SKILL_URLS[@]}"; do
   fi
 done
 
+PLUGIN_MARKETPLACES=(
+  "openai/codex-plugin-cc"
+)
+
 PLUGINS=(
   "ralph-loop@claude-plugins-official"
+  "codex@openai-codex"
 )
 
 info "Installing Claude Code Plugins..."
+
+for marketplace in "${PLUGIN_MARKETPLACES[@]}"; do
+  if $DRY_RUN; then
+    info "[dry-run] claude plugin marketplace add $marketplace"
+  else
+    if claude plugin marketplace add "$marketplace"; then
+      info "Added marketplace: $marketplace"
+    else
+      info "⚠️  Failed marketplace: $marketplace"
+    fi
+  fi
+done
 
 for plugin in "${PLUGINS[@]}"; do
   if $DRY_RUN; then
@@ -90,6 +107,19 @@ for plugin in "${PLUGINS[@]}"; do
     fi
   fi
 done
+
+# Codex CLI is required by codex@openai-codex; install if missing.
+if ! command -v codex >/dev/null 2>&1; then
+  if $DRY_RUN; then
+    info "[dry-run] npm install -g @openai/codex"
+  else
+    if npm install -g @openai/codex; then
+      info "Codex CLI installed"
+    else
+      info "⚠️  Codex CLI install failed"
+    fi
+  fi
+fi
 
 # session-wrap plugin
 if ! [ -d ~/.claude/plugins/session-wrap ]; then

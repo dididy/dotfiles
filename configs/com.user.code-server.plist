@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.user.opencode-web</string>
+  <string>com.user.code-server</string>
   <key>ProgramArguments</key>
   <array>
     <string>__WRAPPER_PATH__</string>
@@ -15,8 +15,8 @@
   <key>ThrottleInterval</key>
   <integer>60</integer>
   <key>StandardOutPath</key>
-  <string>__HOME__/Library/Logs/opencode-web.out.log</string>
+  <string>__HOME__/Library/Logs/code-server.out.log</string>
   <key>StandardErrorPath</key>
-  <string>__HOME__/Library/Logs/opencode-web.err.log</string>
+  <string>__HOME__/Library/Logs/code-server.err.log</string>
 </dict>
 </plist>
