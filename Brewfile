@@ -18,7 +18,6 @@ brew "fzf"                      # fuzzy finder (Ctrl+R etc.)
 brew "atuin"                    # SQLite-backed shell history with sync
 brew "direnv"                   # auto-load per-directory env from .envrc
 brew "zoxide"                   # smarter cd with directory learning
-brew "starship"                 # cross-shell prompt
 brew "rtk"                      # CLI proxy for 60-90% LLM token savings
 brew "mkcert"
 brew "whisper-cpp"
@@ -26,9 +25,7 @@ brew "tmux"                     # terminal multiplexer
 brew "vercel-cli"               # Vercel deployment CLI
 brew "postgresql"               # PostgreSQL database
 brew "mole"
-brew "google-authenticator-libpam"  # TOTP for SSH 2FA
-brew "qrencode"                     # QR code for TOTP setup
-brew "mosh"                         # mobile shell (SSH with auto-reconnect)
+brew "bats-core"                    # Bash Automated Testing System
 brew "anomalyco/tap/opencode"   # AI coding agent (third-party tap; tracks latest)
 brew "code-server"              # VS Code in browser (auto-launched via LaunchAgent)
 brew "mas"                      # Mac App Store CLI

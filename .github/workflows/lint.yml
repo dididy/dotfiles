@@ -42,3 +42,12 @@ jobs:
           # Plain `ruby -e "eval(...)"` does NOT, because those methods are only
           # defined inside the Homebrew bundler context.
           brew bundle list --file=Brewfile > /dev/null
+
+  bats:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bats-core
+        run: brew install bats-core
+      - name: Run bats suite
+        run: bats tests/

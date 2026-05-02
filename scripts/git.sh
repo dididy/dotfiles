@@ -31,17 +31,33 @@ if $DRY_RUN; then
   info "[dry-run] .gitconfig-personal: $personal_name <$personal_email>"
   info "[dry-run] .gitconfig-work: $work_name <$work_email>"
 else
-  # Write user info to configs directory
+  # SSH-signed commits use the per-account public key. Verifiers (GitHub) need
+  # the same key registered as a "Signing key" on the account, in addition to
+  # the auth key — they're separate dropdowns on github.com/settings/keys.
   cat > "$DOTFILES_DIR/configs/.gitconfig-personal" <<EOF
 [user]
     name = $personal_name
     email = $personal_email
+    signingkey = ~/.ssh/id_ed25519_personal.pub
+[gpg]
+    format = ssh
+[commit]
+    gpgsign = true
+[tag]
+    gpgsign = true
 EOF
 
   cat > "$DOTFILES_DIR/configs/.gitconfig-work" <<EOF
 [user]
     name = $work_name
     email = $work_email
+    signingkey = ~/.ssh/id_ed25519_work.pub
+[gpg]
+    format = ssh
+[commit]
+    gpgsign = true
+[tag]
+    gpgsign = true
 EOF
 fi
 
@@ -119,10 +135,28 @@ EOF
 fi
 
 # ── Register with ssh-agent ──
+# macOS Sequoia+ no longer auto-loads keys into ssh-agent on session start, so
+# we use --apple-use-keychain to persist the passphrase in the user's Keychain.
+# That way every shell — and signed-commit invocation — picks up the key
+# without re-prompting. Falls back silently if the flag is unsupported (Linux,
+# older macOS).
 if ! $DRY_RUN; then
   eval "$(ssh-agent -s)" >/dev/null 2>&1
-  ssh-add "$HOME/.ssh/id_ed25519_personal" 2>/dev/null || true
-  ssh-add "$HOME/.ssh/id_ed25519_work" 2>/dev/null || true
+  for key in id_ed25519_personal id_ed25519_work; do
+    if ! ssh-add --apple-use-keychain "$HOME/.ssh/$key" 2>/dev/null; then
+      ssh-add "$HOME/.ssh/$key" 2>/dev/null || true
+    fi
+  done
+fi
+
+# ── Global gitignore ──
+# install.sh creates the symlink; we just register it as the global excludesfile.
+# Path is recorded as-is — git resolves it lazily, so the symlink doesn't need
+# to exist yet.
+if $DRY_RUN; then
+  info "[dry-run] git config --global core.excludesfile ~/.gitignore_global"
+else
+  git config --global core.excludesfile "$HOME/.gitignore_global"
 fi
 
 echo ""

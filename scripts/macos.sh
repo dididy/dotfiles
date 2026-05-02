@@ -30,6 +30,12 @@ info "Configuring keyboard..."
 run_defaults write NSGlobalDomain KeyRepeat -int 1
 run_defaults write NSGlobalDomain InitialKeyRepeat -int 10
 run_defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false
+# Disable typing "intelligence" that mangles code/markdown
+run_defaults write NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -bool false
+run_defaults write NSGlobalDomain NSAutomaticQuoteSubstitutionEnabled -bool false
+run_defaults write NSGlobalDomain NSAutomaticDashSubstitutionEnabled -bool false
+run_defaults write NSGlobalDomain NSAutomaticPeriodSubstitutionEnabled -bool false
+run_defaults write NSGlobalDomain NSAutomaticCapitalizationEnabled -bool false
 
 # CapsLock → Escape (persistent via hidutil + LaunchAgent)
 info "Mapping CapsLock → Escape..."

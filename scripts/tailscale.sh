@@ -35,12 +35,13 @@ echo "Free tier: unlimited devices, up to 6 users."
 echo ""
 echo "After signing in:"
 echo "  - Each device gets a 100.x.x.x IP and a *.ts.net hostname"
-echo "  - SSH/mosh access via that IP, no port forwarding needed"
+echo "  - Tailscale SSH for shell access — no port forwarding, no separate keys"
 echo "  - Network is private — invisible to the internet"
 echo ""
 
 if $DRY_RUN; then
   info "[dry-run] Skipping Tailscale status check"
+  info "[dry-run] tailscale set --ssh"
 else
   read -rp "Press Enter once you've signed in to Tailscale..."
 
@@ -50,12 +51,23 @@ else
     "$TAILSCALE_CLI" status
     echo ""
     info "Your hostname: $("$TAILSCALE_CLI" status --json 2>/dev/null | grep -o '"DNSName":"[^"]*"' | head -1 | cut -d'"' -f4 || echo 'check Tailscale app')"
+
+    # Enable Tailscale SSH — replaces OpenSSH for inbound shell access. Identity
+    # comes from the tailnet (no password, no separate ssh keys, no TOTP), and
+    # access is gated by Tailscale ACLs in the admin console.
+    info "Enabling Tailscale SSH..."
+    if "$TAILSCALE_CLI" set --ssh; then
+      info "Tailscale SSH enabled — connect with: tailscale ssh $(whoami)@<hostname>"
+    else
+      warn "tailscale set --ssh failed — enable it manually in the admin console"
+    fi
   else
-    warn "Tailscale not connected — sign in via the menu bar app"
+    warn "Tailscale not connected — sign in via the menu bar app, then re-run this script"
   fi
 fi
 
 echo ""
 info "Tailscale setup done"
 warn "Remember: install Tailscale on your phone too (App Store / Play Store)"
-warn "After everything works, you can close router port 22 forwarding"
+warn "If macOS Remote Login is still on from a previous setup, turn it off:"
+warn "  System Settings → General → Sharing → Remote Login"

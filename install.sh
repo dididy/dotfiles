@@ -36,10 +36,8 @@ echo "  6. Claude Code setup (claude.sh)"
 echo "  7. opencode setup (opencode.sh)"
 echo "  8. Hermes Agent (hermes.sh)"
 echo "  9. dotfiles symlinks"
-echo " 10. SSH server (ssh-server.sh)"
-echo " 11. Tailscale VPN (tailscale.sh)"
-echo " 12. OTP two-factor auth (otp.sh)"
-echo " 13. purplemux + code-server LaunchAgents (services.sh)"
+echo " 10. Tailscale VPN + Tailscale SSH (tailscale.sh)"
+echo " 11. purplemux + code-server LaunchAgents (services.sh)"
 echo ""
 
 read -rp "Ready to continue? (y/N) " confirm
@@ -49,44 +47,46 @@ if [[ "$confirm" != [yY] ]]; then
 fi
 
 # ── 1. Homebrew ──
-info "1/13 Installing Homebrew & apps..."
+info "1/11 Installing Homebrew & apps..."
 bash "$DOTFILES_DIR/scripts/brew.sh"
 
 # ── 2. macOS settings ──
-info "2/13 Applying macOS system settings..."
+info "2/11 Applying macOS system settings..."
 bash "$DOTFILES_DIR/scripts/macos.sh"
 
 # ── 3. Dev environment ──
-info "3/13 Setting up dev environment..."
+info "3/11 Setting up dev environment..."
 bash "$DOTFILES_DIR/scripts/dev.sh"
 
 # ── 4. Shell ──
-info "4/13 Configuring shell environment..."
+info "4/11 Configuring shell environment..."
 bash "$DOTFILES_DIR/scripts/shell.sh"
 
 # ── 5. Git ──
-info "5/13 Configuring Git..."
+info "5/11 Configuring Git..."
 bash "$DOTFILES_DIR/scripts/git.sh"
 
 # ── 6. Claude Code ──
-info "6/13 Setting up Claude Code..."
+info "6/11 Setting up Claude Code..."
 bash "$DOTFILES_DIR/scripts/claude.sh"
 
 # ── 7. opencode ──
-info "7/13 Setting up opencode..."
+info "7/11 Setting up opencode..."
 bash "$DOTFILES_DIR/scripts/opencode.sh"
 
 # ── 8. Hermes Agent ──
-info "8/13 Setting up Hermes Agent..."
+info "8/11 Setting up Hermes Agent..."
 bash "$DOTFILES_DIR/scripts/hermes.sh"
 
 # ── 9. Symlinks ──
-info "9/13 Creating dotfiles symlinks..."
+info "9/11 Creating dotfiles symlinks..."
 
 link_file "$DOTFILES_DIR/configs/.zshrc"              "$HOME/.zshrc"
+link_file "$DOTFILES_DIR/configs/.tmux.conf"          "$HOME/.tmux.conf"
 link_file "$DOTFILES_DIR/configs/.gitconfig"           "$HOME/.gitconfig"
 link_file "$DOTFILES_DIR/configs/.gitconfig-personal"  "$HOME/.gitconfig-personal"
 link_file "$DOTFILES_DIR/configs/.gitconfig-work"      "$HOME/.gitconfig-work"
+link_file "$DOTFILES_DIR/configs/.gitignore_global"    "$HOME/.gitignore_global"
 
 # shared agent config (canonical)
 mkdir -p "$HOME/.agent"
@@ -110,20 +110,12 @@ RTK_CONFIG_DIR="$HOME/Library/Application Support/rtk"
 mkdir -p "$RTK_CONFIG_DIR"
 link_file "$DOTFILES_DIR/configs/rtk-config.toml"     "$RTK_CONFIG_DIR/config.toml"
 
-# ── 10. SSH server ──
-info "10/13 Setting up SSH server..."
-bash "$DOTFILES_DIR/scripts/ssh-server.sh"
-
-# ── 11. Tailscale ──
-info "11/13 Setting up Tailscale..."
+# ── 10. Tailscale + Tailscale SSH ──
+info "10/11 Setting up Tailscale (incl. Tailscale SSH)..."
 bash "$DOTFILES_DIR/scripts/tailscale.sh"
 
-# ── 12. OTP ──
-info "12/13 Setting up OTP two-factor auth..."
-bash "$DOTFILES_DIR/scripts/otp.sh"
-
-# ── 13. purplemux + code-server services ──
-info "13/13 Installing purplemux + code-server LaunchAgents..."
+# ── 11. purplemux + code-server services ──
+info "11/11 Installing purplemux + code-server LaunchAgents..."
 bash "$DOTFILES_DIR/scripts/services.sh"
 
 echo ""

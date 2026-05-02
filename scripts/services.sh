@@ -91,7 +91,26 @@ install_agent "com.user.code-server" \
               "$DOTFILES_DIR/scripts/code-server-launch.sh"
 
 info "services setup done"
-warn "Expose to your tailnet (HTTPS via the tailnet cert; no plaintext on LAN):"
-warn "  tailscale serve --bg --https=443 --set-path=/ http://localhost:8022   # purplemux"
-warn "  tailscale serve --bg --https=8443 --set-path=/ http://localhost:8088  # code-server"
-warn "Then restrict by Tailscale ACL — both endpoints are inside the tailnet only."
+
+# ── Auto-attach to tailnet via tailscale serve ──
+# `tailscale serve` config is persisted by tailscaled, so this is idempotent —
+# re-running with the same args is a no-op. We only attempt this if tailscale
+# is installed AND the daemon is logged in (status is non-error).
+if command -v tailscale >/dev/null 2>&1 && tailscale status >/dev/null 2>&1; then
+  if $DRY_RUN; then
+    info "[dry-run] tailscale serve --bg --https=443  --set-path=/ http://localhost:8022"
+    info "[dry-run] tailscale serve --bg --https=8443 --set-path=/ http://localhost:8088"
+  else
+    tailscale serve --bg --https=443  --set-path=/ http://localhost:8022 \
+      || warn "tailscale serve (purplemux) failed — run manually after login"
+    tailscale serve --bg --https=8443 --set-path=/ http://localhost:8088 \
+      || warn "tailscale serve (code-server) failed — run manually after login"
+    info "Tailnet exposure: purplemux on :443, code-server on :8443 (HTTPS via *.ts.net cert)"
+  fi
+else
+  warn "Tailscale not installed or not logged in — skipping serve config."
+  warn "After 'tailscale up', re-run this script or invoke manually:"
+  warn "  tailscale serve --bg --https=443  --set-path=/ http://localhost:8022   # purplemux"
+  warn "  tailscale serve --bg --https=8443 --set-path=/ http://localhost:8088   # code-server"
+fi
+warn "Restrict access via Tailscale ACL — both endpoints are tailnet-only."

@@ -1,6 +1,6 @@
 # dotfiles
 
-macOS dev environment, automated.
+My opinionated macOS dev setup. Three goals: AI-assisted by default (Claude Code, opencode, hermes-agent, codex CLI side-by-side), zero-trust remote access (Tailscale-only, with Tailscale SSH replacing OpenSSH so there are no public ports and no separate auth/2FA stack to maintain), and reproducible (idempotent scripts, `--dry-run`, CI-checked with shellcheck + `bash -n` + Brewfile validation + bats).
 
 Clone and run `install.sh`. It'll ask for confirmation before starting, then prompt for git name/email when it gets there.
 
@@ -14,7 +14,7 @@ cd ~/dotfiles
 
 ## What gets installed
 
-**Homebrew + apps** — packages from `Brewfile`, including starship and the usual CLI tools.
+**Homebrew + apps** — packages from `Brewfile`, including the usual CLI tools (ripgrep/fd/bat/eza/fzf/zoxide/atuin/direnv/jq/delta/tmux) plus `bats-core` for shell-script tests.
 
 **macOS settings** — dock autohide, Finder tweaks, keyboard repeat rates, CapsLock → Escape, three-finger drag, screenshots to `~/Screenshots`.
 
@@ -28,7 +28,7 @@ cd ~/dotfiles
 
 **Shell** — Oh My Zsh with zsh-autosuggestions, zsh-syntax-highlighting, zsh-completions.
 
-**Git** — separate personal/work accounts via `includeIf`, each with its own SSH key.
+**Git** — separate personal/work accounts via `includeIf`, each with its own SSH key. Commits and tags are SSH-signed by default (`gpg.format=ssh`, `commit.gpgsign=true`) using the same per-account key — register the public key as a Signing Key on GitHub to get a verified badge. A global `~/.gitignore_global` (symlink to `configs/.gitignore_global`) catches `.DS_Store`, editor leftovers, `.envrc`, `.env*`, etc., so individual repos don't have to.
 
 **Claude Code:**
 - Skills — agent-skills, clarify, code-review, e2e-skills, frontend-design, humanizer, im-not-ai, karpathy-guidelines, security-best-practices, superpowers, ui-skills, ultrawork
@@ -47,8 +47,10 @@ cd ~/dotfiles
 
 **[Hermes Agent](https://github.com/NousResearch/hermes-agent):** Nous Research's self-improving AI agent. `hermes.sh` runs the upstream one-shot installer (`curl … | bash`) — idempotent, skips if `hermes` is already on PATH. Configure with `hermes setup` after a shell reload.
 
+**tmux** — minimal `~/.tmux.conf` (symlinked from `configs/.tmux.conf`): `C-Space` prefix, mouse on, vi-mode copy, `|`/`-` splits that keep CWD, 100k scrollback, true-color.
+
 **Auto-launched browser dev services (LaunchAgents):**
-Both run at every login with `KeepAlive=true` (throttle 60s). Both are reached over the tailnet via `tailscale serve` (HTTPS via Tailscale's `*.ts.net` cert). code-server binds to `127.0.0.1` (kernel-level isolation). purplemux binds to `*:8022` but enforces an app-level `networkAccess: "tailscale"` filter — non-tailnet/non-loopback IPs get HTTP 403 before auth. The filter is defense-in-one; if you're on hostile wifi without NAT, also enable the macOS firewall in stealth mode.
+Both run at every login with `KeepAlive=true` (throttle 60s). Both are reached over the tailnet via `tailscale serve` (HTTPS via Tailscale's `*.ts.net` cert; configured automatically by `services.sh`). code-server binds to `127.0.0.1` (kernel-level isolation). purplemux binds to `*:8022` but enforces an app-level `networkAccess: "tailscale"` filter — non-tailnet/non-loopback IPs get HTTP 403 before auth. Defense-in-depth: `macos.sh` already enables the macOS firewall in stealth mode, so a hostile-wifi attacker sees stealthed ports even before reaching the app filter.
 
 - `com.user.purplemux` — [purplemux](https://github.com/subicura/purplemux), web-native terminal multiplexer for Claude Code
   - Installed via `npm install -g purplemux` (services.sh handles this)
@@ -64,15 +66,11 @@ Both run at every login with `KeepAlive=true` (throttle 60s). Both are reached o
 
 **Shared agent config** — canonical `~/.agent/AGENTS.md` with shared rules, also symlinked to `~/.cursor/rules/AGENTS.md` and (after opencode setup) `~/.config/opencode/AGENTS.md`. `~/.claude/CLAUDE.md` imports it via `@AGENTS.md`.
 
-**Dotfiles symlinks** — zshrc, gitconfig, Claude Code settings, skill-eval hook.
+**Dotfiles symlinks** — zshrc, tmux.conf, gitconfig, gitignore_global, Claude Code settings, skill-eval hook.
 
-**SSH server** — enables macOS Remote Login with hardened sshd config (key + OTP required, no root, no password).
+**Tailscale + Tailscale SSH** — private mesh VPN for remote access. Each device gets a stable `100.x.x.x` IP and `*.ts.net` hostname; no port forwarding, no public exposure. `tailscale.sh` runs `tailscale set --ssh` so inbound shell access goes through Tailscale (identity from the tailnet, ACL-gated in the admin console) — that intentionally replaces OpenSSH + TOTP. Persistent sessions: `tailscale ssh yongjae@<host> -- tmux attach`. Free tier covers personal use.
 
-**Tailscale** — private mesh VPN for remote access. Each device gets a stable `100.x.x.x` IP and `*.ts.net` hostname. No port forwarding, no public exposure. Free tier covers personal use.
-
-**OTP** — TOTP two-factor auth for SSH using google-authenticator PAM module. Requires both SSH key and authenticator app code (defense-in-depth over Tailscale).
-
-**mosh** — mobile shell for resilient remote access. Auto-reconnects on network changes (WiFi → LTE, sleep/wake). Use with tmux for persistent sessions: `mosh yongjae@100.x.x.x -- tmux attach`
+**Tests** — bats-core suites under `tests/` cover `scripts/lib/common.sh` helpers and a smoke check that every shell script parses, uses `set -euo pipefail`, and that the `Brewfile` resolves. Run with `bats tests/`.
 
 ## Structure
 
@@ -94,27 +92,28 @@ dotfiles/
 │   ├── services.sh         # purplemux + code-server LaunchAgent installer
 │   ├── purplemux-launch.sh # LaunchAgent wrapper for purplemux (PATH + node resolution)
 │   ├── code-server-launch.sh # LaunchAgent wrapper for code-server
-│   ├── ssh-server.sh       # SSH server + hardened config
-│   ├── tailscale.sh        # Tailscale VPN setup
-│   └── otp.sh              # TOTP two-factor auth
-└── configs/
-    ├── .zshrc
-    ├── .gitconfig
-    ├── .gitconfig-personal
-    ├── .gitconfig-work
-    ├── AGENTS.md           # canonical agent rules (Claude + Cursor + opencode)
-    ├── CLAUDE.md           # Claude Code wrapper (imports AGENTS.md)
-    ├── claude-settings.json
-    ├── com.user.purplemux.plist     # LaunchAgent template (sed-substituted at install)
-    ├── com.user.code-server.plist   # LaunchAgent template (sed-substituted at install)
-    ├── opencode/
-    │   ├── opencode.json           # opencode global config + plugin list
-    │   └── oh-my-openagent.json    # agents/categories with model fallbacks
-    ├── rtk-config.toml
-    ├── sshd_config.d/
-    │   └── hardened.conf   # hardened sshd config template
-    └── hooks/
-        └── skill-eval.sh   # forced-eval prompt injection hook
+│   └── tailscale.sh        # Tailscale VPN + `tailscale set --ssh`
+├── configs/
+│   ├── .zshrc
+│   ├── .tmux.conf
+│   ├── .gitconfig
+│   ├── .gitconfig-personal
+│   ├── .gitconfig-work
+│   ├── .gitignore_global
+│   ├── AGENTS.md           # canonical agent rules (Claude + Cursor + opencode)
+│   ├── CLAUDE.md           # Claude Code wrapper (imports AGENTS.md)
+│   ├── claude-settings.json
+│   ├── com.user.purplemux.plist     # LaunchAgent template (sed-substituted at install)
+│   ├── com.user.code-server.plist   # LaunchAgent template (sed-substituted at install)
+│   ├── opencode/
+│   │   ├── opencode.json           # opencode global config + plugin list
+│   │   └── oh-my-openagent.json    # agents/categories with model fallbacks
+│   ├── rtk-config.toml
+│   └── hooks/
+│       └── skill-eval.sh   # forced-eval prompt injection hook
+└── tests/                  # bats-core suites: run `bats tests/`
+    ├── common.bats
+    └── scripts.bats
 ```
 
 ## Run individual scripts
