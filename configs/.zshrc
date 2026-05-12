@@ -106,3 +106,6 @@ alias gc="git commit"
 
 # ── Local bin ──
 export PATH="$HOME/.local/bin:$PATH"
+
+# Enable 1h prompt-cache TTL (vs 5min default) for Anthropic API
+export ENABLE_PROMPT_CACHING_1H=1

@@ -103,6 +103,7 @@ dotfiles/
 │   ├── AGENTS.md           # canonical agent rules (Claude + Cursor + opencode)
 │   ├── CLAUDE.md           # Claude Code wrapper (imports AGENTS.md)
 │   ├── claude-settings.json
+│   ├── mcp.json            # shared MCP servers imported by oh-my-openagent
 │   ├── com.user.purplemux.plist     # LaunchAgent template (sed-substituted at install)
 │   ├── com.user.code-server.plist   # LaunchAgent template (sed-substituted at install)
 │   ├── opencode/

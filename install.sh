@@ -95,6 +95,7 @@ link_file "$DOTFILES_DIR/configs/AGENTS.md" "$HOME/.agent/AGENTS.md"
 # Claude Code
 mkdir -p "$HOME/.claude/hooks" "$HOME/.claude/plugins"
 link_file "$DOTFILES_DIR/configs/claude-settings.json" "$HOME/.claude/settings.json"
+link_file "$DOTFILES_DIR/configs/mcp.json"             "$HOME/.claude/.mcp.json"
 link_file "$DOTFILES_DIR/configs/CLAUDE.md"            "$HOME/.claude/CLAUDE.md"
 link_file "$DOTFILES_DIR/configs/hooks/skill-eval.sh"  "$HOME/.claude/hooks/skill-eval.sh"
 
