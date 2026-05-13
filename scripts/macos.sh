@@ -103,6 +103,14 @@ fi
 run_defaults write com.apple.screencapture location -string "$SCREENSHOT_DIR"
 run_defaults write com.apple.screencapture type -string "png"
 
+# ── Remote Login (SSH) ──
+info "Enabling Remote Login (SSH)..."
+if $DRY_RUN; then
+  info "[dry-run] Skipping Remote Login enable"
+else
+  sudo systemsetup -setremotelogin on 2>/dev/null || info "⚠️  Remote Login enable failed — enable manually in System Settings > General > Sharing"
+fi
+
 # ── Misc ──
 info "Other settings..."
 # Don't create .DS_Store on network/USB drives

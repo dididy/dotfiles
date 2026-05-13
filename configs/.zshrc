@@ -15,6 +15,9 @@ fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
 
 source "$ZSH/oh-my-zsh.sh"
 
+# ── Rancher Desktop (optional, Docker CLI replacement) ──
+[ -d "$HOME/.rd/bin" ] && export PATH="$HOME/.rd/bin:$PATH"
+
 # ── nvm ──
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
@@ -40,6 +43,27 @@ command -v atuin &>/dev/null && eval "$(atuin init zsh --disable-up-arrow)"
 
 # ── direnv ──
 command -v direnv &>/dev/null && eval "$(direnv hook zsh)"
+
+# ── Claude Code: serena system-prompt override (Opus 4.7 bias workaround) ──
+# Opus 4.7 + CC's 16k-token built-in tool descriptions create strong bias
+# against external MCP tools. Serena's prompt-override counteracts this so
+# Serena's semantic tools actually get used. Falls back to plain `claude` if
+# serena is not installed. See https://github.com/oraios/serena
+if command -v serena &>/dev/null && command -v claude &>/dev/null; then
+  claude() {
+    local override
+    override="$(serena prompts print-cc-system-prompt-override 2>/dev/null)"
+    if [ -n "$override" ]; then
+      command claude --system-prompt="$override" "$@"
+    else
+      command claude "$@"
+    fi
+  }
+fi
+
+# ── Company-local secrets (optional) ──
+# Loaded if present; managed by the company overlay (see dotfiles/company/).
+[ -f "$HOME/.company.secrets.env" ] && . "$HOME/.company.secrets.env"
 
 # ── Tailscale dev-server bind helpers ──
 # Returns Tailscale IPv4 address, or empty string if not connected.

@@ -3,10 +3,13 @@ tap "anomalyco/tap"
 
 # ── CLI tools ──
 brew "git"
+brew "git-filter-repo"           # surgical rewrites of git history (author, paths, etc.)
 brew "gh"
+brew "uv"                        # Astral's fast Python package/tool installer (used by serena)
 brew "curl"
 brew "wget"
 brew "jq"                       # JSON parser/filter
+brew "gettext"                  # envsubst — used by install.sh to render MCP template
 brew "tree"                     # directory tree viewer
 brew "htop"                     # system monitor (top replacement)
 brew "ripgrep"                  # fast grep replacement
@@ -22,12 +25,14 @@ brew "rtk"                      # CLI proxy for 60-90% LLM token savings
 brew "mkcert"
 brew "whisper-cpp"
 brew "tmux"                     # terminal multiplexer
+brew "mosh"                     # mobile shell — resilient UDP terminal sessions over SSH (survives roaming/disconnects)
 brew "vercel-cli"               # Vercel deployment CLI
 brew "postgresql"               # PostgreSQL database
 brew "mole"
-brew "bats-core"                    # Bash Automated Testing System
+brew "bats-core"                # Bash Automated Testing System
 brew "anomalyco/tap/opencode"   # AI coding agent (third-party tap; tracks latest)
 brew "code-server"              # VS Code in browser (auto-launched via LaunchAgent)
+brew "docker"                   # docker CLI only (no Docker Desktop). Pair with Rancher Desktop or similar engine on hosts with licensing restrictions.
 brew "mas"                      # Mac App Store CLI
 
 
@@ -39,9 +44,7 @@ cask "notion"
 cask "obsidian"
 cask "microsoft-teams"
 cask "discord"
-cask "docker"
 cask "figma"
-cask "warp"
 cask "raycast"
 cask "karabiner-elements"
 cask "rectangle"

@@ -1,20 +1,24 @@
 # dotfiles
 
-My opinionated macOS dev setup. Three goals: AI-assisted by default (Claude Code, opencode, hermes-agent, codex CLI side-by-side), zero-trust remote access (Tailscale-only, with Tailscale SSH replacing OpenSSH so there are no public ports and no separate auth/2FA stack to maintain), and reproducible (idempotent scripts, `--dry-run`, CI-checked with shellcheck + `bash -n` + Brewfile validation + bats).
+My opinionated macOS dev setup. Three goals: AI-assisted by default (Claude Code, opencode, hermes-agent, codex CLI side-by-side), remote access via Tailscale (private mesh, no public ports) with both OpenSSH and Tailscale SSH enabled side-by-side, and reproducible (idempotent scripts, `--dry-run`, CI-checked with shellcheck + `bash -n` + Brewfile validation + bats).
 
 Clone and run `install.sh`. It'll ask for confirmation before starting, then prompt for git name/email when it gets there.
 
 ## Quick start
 
 ```bash
-git clone https://github.com/voidmatcha/dotfiles.git ~/dotfiles
+git clone --recurse-submodules https://github.com/voidmatcha/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 ./install.sh
 ```
 
+The `--recurse-submodules` flag pulls the optional `company/` overlay if you
+have access to the internal git host; without access the submodule clone fails
+silently and the public `install.sh` proceeds normally.
+
 ## What gets installed
 
-**Homebrew + apps** — packages from `Brewfile`, including the usual CLI tools (ripgrep/fd/bat/eza/fzf/zoxide/atuin/direnv/jq/delta/tmux) plus `bats-core` for shell-script tests.
+**Homebrew + apps** — packages from `Brewfile`, including the usual CLI tools (ripgrep/fd/bat/eza/fzf/zoxide/atuin/direnv/jq/delta/tmux) plus `bats-core` for shell-script tests, `uv` (Python tool installer used by serena), `gettext` (envsubst, used by company overlay), `git-filter-repo` (surgical history rewrites), and `docker` CLI (no Docker Desktop — pair with Rancher Desktop on hosts with licensing restrictions).
 
 **macOS settings** — dock autohide, Finder tweaks, keyboard repeat rates, CapsLock → Escape, three-finger drag, screenshots to `~/Screenshots`.
 
@@ -25,6 +29,9 @@ cd ~/dotfiles
 - Playwright CLI (for coding agents)
 - whisper-cpp model (~1.5GB, large-v3-turbo)
 - ccusage, rtk, agent-browser
+- [serena](https://github.com/oraios/serena) — MCP server for semantic code navigation (LSP-backed). Installed via `uv tool install`, registered in `configs/mcp.json` with `--context claude-code --project-from-cwd`. `.zshrc` wraps `claude` to inject serena's system-prompt-override (counters Opus 4.7 bias toward built-in tools)
+- [graphify](https://github.com/safishamsi/graphify) — Claude Code skill (`/graphify`) that turns any folder into a queryable knowledge graph. Installed via `pip install --user graphifyy && graphify install`
+- [wrangler](https://developers.cloudflare.com/workers/wrangler/) — Cloudflare Workers/Pages/R2/D1 CLI
 
 **Shell** — Oh My Zsh with zsh-autosuggestions, zsh-syntax-highlighting, zsh-completions.
 
@@ -32,9 +39,11 @@ cd ~/dotfiles
 
 **Claude Code:**
 - Skills — agent-skills, clarify, code-review, e2e-skills, frontend-design, humanizer, im-not-ai, karpathy-guidelines, security-best-practices, superpowers, ui-skills, ultrawork
-- Plugins — ralph-loop (iterative autonomous dev loops), [codex@openai-codex](https://github.com/openai/codex-plugin-cc) (delegate to / review with Codex from inside Claude Code; pulls in `@openai/codex` CLI)
-- Hooks — skill-eval (forced-eval prompt injection per Scott Spence pattern, ~84% activation rate)
-- MCP — chrome-devtools (browser control via Chrome DevTools Protocol)
+- Plugins — ralph-loop (iterative autonomous dev loops), [codex@openai-codex](https://github.com/openai/codex-plugin-cc) (delegate to / review with Codex from inside Claude Code; pulls in `@openai/codex` CLI), superpowers, rust-analyzer-lsp, fakechat, vercel, session-report, claude-md-management (`/revise-claude-md` + `claude-md-improver` audit skill), hookify
+- Hooks — skill-eval (forced-eval prompt injection per Scott Spence pattern, ~84% activation rate), rtk-rewrite (auto-compresses Bash output, 60–90% token savings)
+- MCP — chrome-devtools (browser control via Chrome DevTools Protocol), serena (semantic code intelligence). Defined in `configs/mcp.json`; `scripts/claude.sh` reads that file and registers each entry via `claude mcp add-json --scope user` (writes to `~/.claude.json`, not the older `.mcp.json` symlink path).
+- Codex CLI — installed alongside via `codex@openai-codex`; `configs/codex/config.toml` enables the experimental `/goal` slash command (`[features].goals = true`, see https://developers.openai.com/codex/use-cases/follow-goals)
+- Token saving — settings calibrated against [spilist's checklist gist](https://gist.github.com/spilist/c468cbf1ed0ffc91100f813aabdcd520) (verified against official docs). Claude Code: `includeGitInstructions: false` drops the built-in git workflow instructions + git status snapshot from the system prompt. `autoInstallIdeExtension: false` keeps Claude Code as a pure terminal tool — no auto-install of VS Code/JetBrains extensions. Codex: `web_search = "disabled"` drops the web_search tool definition (re-enable per-invocation with `codex --search`). `[features].apps = false` drops ChatGPT-connector tool definitions.
 
 **opencode:**
 - Brew tap — `anomalyco/tap` (third-party tap with current versions; homebrew-core formula is stale)
@@ -68,7 +77,9 @@ Both run at every login with `KeepAlive=true` (throttle 60s). Both are reached o
 
 **Dotfiles symlinks** — zshrc, tmux.conf, gitconfig, gitignore_global, Claude Code settings, skill-eval hook.
 
-**Tailscale + Tailscale SSH** — private mesh VPN for remote access. Each device gets a stable `100.x.x.x` IP and `*.ts.net` hostname; no port forwarding, no public exposure. `tailscale.sh` runs `tailscale set --ssh` so inbound shell access goes through Tailscale (identity from the tailnet, ACL-gated in the admin console) — that intentionally replaces OpenSSH + TOTP. Persistent sessions: `tailscale ssh yongjae@<host> -- tmux attach`. Free tier covers personal use.
+**Tailscale + Tailscale SSH** — private mesh VPN for remote access. Each device gets a stable `100.x.x.x` IP and `*.ts.net` hostname; no port forwarding, no public exposure. `tailscale.sh` runs `tailscale set --ssh` so inbound shell access can go through Tailscale (identity from the tailnet, ACL-gated in the admin console). Persistent sessions: `tailscale ssh yongjae@<host> -- tmux attach`. OpenSSH (`systemsetup -setremotelogin on`, set in `macos.sh`) is enabled in parallel — Tailscale SSH is the primary path, OpenSSH stays as a fallback for tooling that doesn't speak the Tailscale layer. Free tier covers personal use.
+
+**mosh** — UDP-based shell that survives network changes / roaming / disconnects. Bootstraps over SSH for auth (so OpenSSH must stay enabled) then switches to UDP ports 60000–61000. Useful on mobile hotspots or unstable links. Connect with `mosh user@host` or `mosh --ssh="tailscale ssh" user@host` to layer mosh on top of Tailscale SSH. The macOS Application Firewall is in stealth mode, so the first `mosh` session may need a manual exception for `mosh-server` (System Settings → Network → Firewall → Options).
 
 **Tests** — bats-core suites under `tests/` cover `scripts/lib/common.sh` helpers and a smoke check that every shell script parses, uses `set -euo pipefail`, and that the `Brewfile` resolves. Run with `bats tests/`.
 
@@ -112,10 +123,31 @@ dotfiles/
 │   ├── rtk-config.toml
 │   └── hooks/
 │       └── skill-eval.sh   # forced-eval prompt injection hook
-└── tests/                  # bats-core suites: run `bats tests/`
-    ├── common.bats
-    └── scripts.bats
+├── tests/                  # bats-core suites: run `bats tests/`
+│   ├── common.bats
+│   └── scripts.bats
+└── company/                # (gitignored) optional company overlay — see company/README.md
 ```
+
+## Company overlay (optional)
+
+For environments that require company-internal configuration (private plugin
+marketplaces, image registries, scoped npm registries, team-issued API keys),
+`install.sh` automatically invokes `company/install.sh` if that path exists.
+
+`company/` is a **git submodule** pointing at a separate, internally-hosted
+repo (URL listed in `.gitmodules`). The submodule URL is visible publicly but
+the repository itself is only accessible over the internal network with proper
+auth — clone fails gracefully outside the company.
+
+On a new machine:
+```bash
+git clone --recurse-submodules https://github.com/voidmatcha/dotfiles.git ~/dotfiles
+# or, if already cloned:
+git -C ~/dotfiles submodule update --init
+```
+
+See `company/README.md` for what lives in the overlay and how to maintain it.
 
 ## Run individual scripts
 

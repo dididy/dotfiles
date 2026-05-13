@@ -118,6 +118,51 @@ else
   fi
 fi
 
+# ── serena (MCP server: semantic code search + editing) ──
+info "Checking serena..."
+if $DRY_RUN; then
+  info "[dry-run] uv tool install serena-agent@latest && serena init"
+elif ! command -v uv &>/dev/null; then
+  warn "uv not installed — skipping serena (run brew bundle first)"
+else
+  if ! command -v serena &>/dev/null; then
+    info "Installing serena via uv..."
+    if ! uv tool install -p 3.13 serena-agent@latest --prerelease=allow; then
+      warn "serena install failed — try manually: uv tool install -p 3.13 serena-agent@latest --prerelease=allow"
+    fi
+  else
+    info "serena already installed"
+  fi
+
+  # serena init is idempotent; safe to re-run on existing setups
+  if command -v serena &>/dev/null; then
+    info "Initialising serena (language server backend)..."
+    if ! serena init </dev/null; then
+      warn "serena init failed — run manually with: serena init"
+    fi
+  fi
+fi
+
+# ── graphify (Claude Code skill: knowledge graph from any folder) ──
+info "Checking graphify..."
+if $DRY_RUN; then
+  info "[dry-run] pip install graphifyy && graphify install"
+elif command -v graphify &>/dev/null; then
+  info "graphify already installed"
+else
+  info "Installing graphify (pip)..."
+  # graphify ships under "graphifyy" on PyPI until the "graphify" name is reclaimed
+  if pip install --user graphifyy 2>/dev/null && command -v graphify &>/dev/null; then
+    if graphify install; then
+      info "graphify skill installed — use /graphify in Claude Code"
+    else
+      warn "graphify install (skill registration) failed — try: graphify install"
+    fi
+  else
+    warn "graphify install failed — try manually: pip install --user graphifyy && graphify install"
+  fi
+fi
+
 # ── ccusage (Claude Code usage dashboard) ──
 info "Checking ccusage..."
 if $DRY_RUN; then
@@ -187,6 +232,19 @@ else
     npm install -g portless 2>/dev/null || info "⚠️  portless install failed — check manually"
   else
     info "portless already installed"
+  fi
+fi
+
+# ── wrangler (Cloudflare Workers/Pages/R2/D1 CLI) ──
+info "Checking wrangler..."
+if $DRY_RUN; then
+  info "[dry-run] Skipping wrangler install"
+else
+  if ! command -v wrangler &>/dev/null; then
+    info "Installing wrangler (global)"
+    npm install -g wrangler 2>/dev/null || info "⚠️  wrangler install failed — check manually"
+  else
+    info "wrangler already installed"
   fi
 fi
 

@@ -1,4 +1,7 @@
 {
+  "permissions": {
+    "defaultMode": "auto"
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -24,9 +27,20 @@
     ]
   },
   "enabledPlugins": {
-    "ralph-loop@claude-plugins-official": true
+    "ralph-loop@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "fakechat@claude-plugins-official": true,
+    "vercel@claude-plugins-official": true,
+    "session-report@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true
   },
   "alwaysThinkingEnabled": true,
+  "autoUpdatesChannel": "latest",
+  "voiceEnabled": true,
   "skipDangerousModePermissionPrompt": true,
-  "voiceEnabled": true
+  "skipAutoPermissionPrompt": true,
+  "includeGitInstructions": false,
+  "autoInstallIdeExtension": false
 }

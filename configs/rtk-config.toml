@@ -32,4 +32,11 @@ max_file_size = 1048576
 enabled = true
 
 [hooks]
-exclude_commands = ["playwright"]
+# Commands whose output should NOT be auto-rewritten by rtk's hook.
+# This list mirrors the RTK README's recommended example
+# (https://github.com/rtk-ai/rtk — see "exclude_commands" in the config section).
+# - curl: RTK ships a dedicated `rtk curl` command for explicit invocation;
+#         auto-rewriting plain curl tends to mangle response bodies that
+#         agents need to inspect verbatim.
+# - playwright: full failure logs are needed for debugging E2E tests.
+exclude_commands = ["curl", "playwright"]

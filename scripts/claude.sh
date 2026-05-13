@@ -80,6 +80,13 @@ PLUGIN_MARKETPLACES=(
 PLUGINS=(
   "ralph-loop@claude-plugins-official"
   "codex@openai-codex"
+  "superpowers@claude-plugins-official"
+  "rust-analyzer-lsp@claude-plugins-official"
+  "fakechat@claude-plugins-official"
+  "vercel@claude-plugins-official"
+  "session-report@claude-plugins-official"
+  "claude-md-management@claude-plugins-official"
+  "hookify@claude-plugins-official"
 )
 
 info "Installing Claude Code Plugins..."
@@ -120,6 +127,45 @@ if ! command -v codex >/dev/null 2>&1; then
     fi
   fi
 fi
+
+# ── MCP servers (user scope) ──
+# Claude Code stores user-scope MCP entries in ~/.claude.json (managed via
+# `claude mcp add-json`). Symlinking configs/mcp.json into ~/.claude/.mcp.json
+# does NOT work — verified: `claude mcp add --scope user` writes to
+# ~/.claude.json directly.
+register_mcp_from_file() {
+  local mcp_file="$1"
+  if [ ! -f "$mcp_file" ]; then
+    return 0
+  fi
+  if ! command -v jq &>/dev/null || ! command -v claude &>/dev/null; then
+    warn "jq or claude not available — skipping MCP registration from $mcp_file"
+    return 0
+  fi
+
+  local names
+  names=$(jq -r '.mcpServers | keys[]' "$mcp_file" 2>/dev/null)
+  while IFS= read -r name; do
+    [ -z "$name" ] && continue
+    local entry
+    # Use --arg to safely pass the key (avoids jq filter string-interpolation injection).
+    entry=$(jq -c --arg n "$name" '.mcpServers[$n]' "$mcp_file")
+    if $DRY_RUN; then
+      info "[dry-run] claude mcp add-json --scope user $name '$entry'"
+      continue
+    fi
+    # Remove first (idempotent), then add. Suppress "not found" errors on first run.
+    claude mcp remove --scope user "$name" >/dev/null 2>&1 || true
+    if claude mcp add-json --scope user "$name" "$entry" >/dev/null 2>&1; then
+      info "Registered MCP: $name"
+    else
+      warn "Failed to register MCP: $name"
+    fi
+  done <<< "$names"
+}
+
+info "Registering user-scope MCP servers from configs/mcp.json..."
+register_mcp_from_file "$DOTFILES_DIR/configs/mcp.json"
 
 # session-wrap plugin
 if ! [ -d ~/.claude/plugins/session-wrap ]; then

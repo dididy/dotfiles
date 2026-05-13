@@ -38,6 +38,7 @@ echo "  8. Hermes Agent (hermes.sh)"
 echo "  9. dotfiles symlinks"
 echo " 10. Tailscale VPN + Tailscale SSH (tailscale.sh)"
 echo " 11. purplemux + code-server LaunchAgents (services.sh)"
+echo " 12. Company overlay (only if the company/ submodule is initialized)"
 echo ""
 
 read -rp "Ready to continue? (y/N) " confirm
@@ -93,9 +94,12 @@ mkdir -p "$HOME/.agent"
 link_file "$DOTFILES_DIR/configs/AGENTS.md" "$HOME/.agent/AGENTS.md"
 
 # Claude Code
+# NOTE: MCP servers are NOT registered via symlinking a file. Claude Code stores
+# user-scope MCP entries in ~/.claude.json (managed via `claude mcp add`), not in
+# ~/.claude/.mcp.json. Registration is handled by scripts/claude.sh which reads
+# configs/mcp.json (single source of truth) and runs `claude mcp add-json`.
 mkdir -p "$HOME/.claude/hooks" "$HOME/.claude/plugins"
 link_file "$DOTFILES_DIR/configs/claude-settings.json" "$HOME/.claude/settings.json"
-link_file "$DOTFILES_DIR/configs/mcp.json"             "$HOME/.claude/.mcp.json"
 link_file "$DOTFILES_DIR/configs/CLAUDE.md"            "$HOME/.claude/CLAUDE.md"
 link_file "$DOTFILES_DIR/configs/hooks/skill-eval.sh"  "$HOME/.claude/hooks/skill-eval.sh"
 
@@ -106,6 +110,10 @@ link_file "$DOTFILES_DIR/configs/AGENTS.md" "$HOME/.cursor/rules/AGENTS.md"
 # opencode AGENTS.md (opencode.sh handles its own config files)
 mkdir -p "$HOME/.config/opencode"
 link_file "$DOTFILES_DIR/configs/AGENTS.md" "$HOME/.config/opencode/AGENTS.md"
+
+# Codex CLI
+mkdir -p "$HOME/.codex"
+link_file "$DOTFILES_DIR/configs/codex/config.toml" "$HOME/.codex/config.toml"
 
 RTK_CONFIG_DIR="$HOME/Library/Application Support/rtk"
 mkdir -p "$RTK_CONFIG_DIR"
@@ -122,3 +130,17 @@ bash "$DOTFILES_DIR/scripts/services.sh"
 echo ""
 info "Done."
 info "Restart your terminal or run 'source ~/.zshrc'."
+
+# ── 회사용 overlay (옵션, git submodule) ──
+# company/ 는 git submodule로 별도의 사내 git 저장소에 호스팅된다.
+# 새 머신: git clone --recurse-submodules ... 또는 git submodule update --init
+if [ -x "$DOTFILES_DIR/company/install.sh" ]; then
+  echo ""
+  info "Detected company/install.sh — running company overlay..."
+  bash "$DOTFILES_DIR/company/install.sh"
+elif [ -d "$HOME/work" ]; then
+  echo ""
+  warn "~/work detected but company/ submodule is not initialized."
+  warn "Run: git -C $DOTFILES_DIR submodule update --init"
+  warn "(Requires SSH access to the internal git host — see company/README.md)"
+fi

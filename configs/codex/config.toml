@@ -1,0 +1,26 @@
+# Codex CLI configuration (~/.codex/config.toml).
+# Symlinked here by install.sh.
+# Reference for token-saving checklist:
+# https://gist.github.com/spilist/c468cbf1ed0ffc91100f813aabdcd520
+# (each setting below is verified against the official Codex docs linked inline.)
+
+# ── Token saving ──
+
+# Web search mode: "disabled" | "cached" | "live" (default: "cached").
+# Disable to drop the web_search tool definition from every system prompt.
+# Re-enable per-invocation with `codex --search` when actually needed.
+# Source: https://developers.openai.com/codex/config-reference
+web_search = "disabled"
+
+[features]
+# Disable ChatGPT-connected apps/connectors. Drops connector tool definitions
+# from the system prompt. Re-enable if you use ChatGPT connectors from Codex.
+# Source: https://developers.openai.com/codex/config-reference (features.apps)
+apps = false
+
+# ── Feature enablement (not token saving) ──
+
+# Experimental `/goal` slash command — durable objective for long-running work
+# (migrations, refactors, eval loops). Independent of the token-saving above.
+# Source: https://developers.openai.com/codex/use-cases/follow-goals
+goals = true
