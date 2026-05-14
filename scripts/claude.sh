@@ -39,9 +39,16 @@ SKILL_REPOS=(
   # plugin (which pins to a tested sha, more stable than tracking main).
   "vercel-labs/agent-skills"
   "anthropics/skills@frontend-design"
+  "anthropics/skills@doc-coauthoring"        # handover docs / specs
+  "anthropics/skills@internal-comms"         # status reports / FAQs
+  "anthropics/skills@webapp-testing"         # cake-pc-web Playwright
+  "anthropics/skills@mcp-builder"            # author new MCP servers
+  "anthropics/skills@skill-creator"          # author / tune custom skills
   "supercent-io/skills-template@security-best-practices"
   "supercent-io/skills-template@code-review"
   "yeachan-heo/oh-my-claudecode@ultrawork"
+  "yeachan-heo/oh-my-claudecode@project-session-manager"  # worktree + tmux + gh/jira issue pipeline (psm fix/review/feature)
+  "yeachan-heo/oh-my-claudecode@ai-slop-cleaner"           # regression-safe deletion-first cleanup of AI-generated code
 )
 
 SKILL_URLS=(
@@ -76,6 +83,14 @@ done
 
 PLUGIN_MARKETPLACES=(
   "openai/codex-plugin-cc"
+  # wshobson/agents — 80+ focused plugins (185 agents, 153 skills, 100 commands)
+  # registered under the marketplace id `claude-code-workflows`.
+  # Catalog: https://github.com/wshobson/agents/blob/main/docs/plugins.md
+  "wshobson/agents"
+  # thedotmack/claude-mem — persistent memory + cross-session search (~75k★).
+  # Hooks SessionStart/End + 5 others, SQLite + Chroma vector DB, MCP search tools,
+  # web viewer at localhost:37777, <private> tag for sensitive content.
+  "thedotmack/claude-mem"
 )
 
 PLUGINS=(
@@ -88,6 +103,28 @@ PLUGINS=(
   "session-report@claude-plugins-official"
   "claude-md-management@claude-plugins-official"
   "hookify@claude-plugins-official"
+
+  # wshobson/agents — one plugin per role. Each is isolated (own agents +
+  # commands + skills); only what you install is loaded into context.
+  "comprehensive-review@claude-code-workflows"          # architect + code-review + security
+  "javascript-typescript@claude-code-workflows"         # cake-pc-web stack
+  "python-development@claude-code-workflows"
+  "frontend-mobile-development@claude-code-workflows"
+  "security-scanning@claude-code-workflows"             # SAST
+  "documentation-generation@claude-code-workflows"      # OpenAPI / mermaid / tutorials
+  "unit-testing@claude-code-workflows"                  # pytest + jest generators
+  "git-pr-workflows@claude-code-workflows"
+  "tdd-workflows@claude-code-workflows"                 # test-first methodology
+  "error-debugging@claude-code-workflows"               # error analysis + trace debugging
+  "ui-design@claude-code-workflows"                     # iOS/Android/RN/web UI guidance
+  "accessibility-compliance@claude-code-workflows"      # WCAG auditing
+  "content-marketing@claude-code-workflows"
+  "seo-content-creation@claude-code-workflows"
+  "seo-technical-optimization@claude-code-workflows"    # meta tags, schema markup
+  "seo-analysis-monitoring@claude-code-workflows"
+
+  # thedotmack/claude-mem — persistent memory across sessions
+  "claude-mem@thedotmack"
 )
 
 info "Installing Claude Code Plugins..."

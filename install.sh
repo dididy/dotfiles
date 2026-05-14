@@ -1,6 +1,19 @@
 #!/bin/bash
 set -euo pipefail
 
+# Refuse to run as root. Homebrew rejects root execution, oh-my-zsh installs
+# into the wrong $HOME, and ~/Library/LaunchAgents/ ownership gets corrupted
+# (the install ends up writing root-owned files into the user's tree, which
+# is exactly the bug that prompted this guard). Individual steps will call
+# sudo themselves where they need it.
+if [ "$EUID" -eq 0 ]; then
+  echo "✗ Do NOT run install.sh with sudo or as root."           >&2
+  echo "  Run as your normal user: ./install.sh"                  >&2
+  echo "  Individual steps (firewall, Remote Login) will sudo"   >&2
+  echo "  themselves and prompt for your password as needed."    >&2
+  exit 1
+fi
+
 DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd)"
 DRY_RUN=false
 
@@ -153,7 +166,19 @@ info "  no key needed. If you hit the free-plan rate limit (HTTP 429),"
 info "  get a key at https://dashboard.exa.ai/ and re-register the server"
 info "  with a header: claude mcp add --transport http -H 'x-api-key: ...' exa https://mcp.exa.ai/mcp"
 info "  GitHub Operations on the public dotfiles use 'gh' CLI directly."
-info "  The company overlay (if active) adds GitHub MCP servers — see company/AGENTS-naver.md."
+info "  The company overlay (if active) adds GitHub MCP servers — see company/AGENTS-company.md."
+info ""
+info "=== gh CLI authentication (optional but needed for most gh commands) ==="
+if command -v gh &>/dev/null; then
+  if gh auth status &>/dev/null; then
+    info "  gh: github.com authenticated ✓"
+  else
+    warn "  gh auth login           # github.com (public)"
+  fi
+  if [ -f "$HOME/.company.secrets.env" ]; then
+    warn "  gh auth login --hostname <your-internal-git-host>   # internal GHE (if any)"
+  fi
+fi
 
 # ── 회사용 overlay (옵션, git submodule) ──
 # company/ 는 git submodule로 별도의 사내 git 저장소에 호스팅된다.
@@ -162,9 +187,10 @@ if [ -x "$DOTFILES_DIR/company/install.sh" ]; then
   echo ""
   info "Detected company/install.sh — running company overlay..."
   bash "$DOTFILES_DIR/company/install.sh"
-elif [ -d "$HOME/work" ]; then
+elif [ -f "$HOME/.company.secrets.env" ]; then
   echo ""
-  warn "~/work detected but company/ submodule is not initialized."
+  # shellcheck disable=SC2088  # ~/.company.secrets.env is display text, not a path to expand
+  warn "~/.company.secrets.env present but company/ submodule is not initialized."
   warn "Run: git -C $DOTFILES_DIR submodule update --init"
   warn "(Requires SSH access to the internal git host — see company/README.md)"
 fi

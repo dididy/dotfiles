@@ -1,4 +1,8 @@
 {
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "includeGitInstructions": false,
   "permissions": {
     "defaultMode": "auto"
   },
@@ -9,7 +13,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/rtk-rewrite.sh"
+            "command": "rtk hook claude"
           }
         ]
       }
@@ -34,13 +38,23 @@
     "vercel@claude-plugins-official": true,
     "session-report@claude-plugins-official": true,
     "claude-md-management@claude-plugins-official": true,
-    "hookify@claude-plugins-official": true
+    "hookify@claude-plugins-official": true,
+    "comprehensive-review@claude-code-workflows": true,
+    "tdd-workflows@claude-code-workflows": true,
+    "error-debugging@claude-code-workflows": true
+  },
+  "extraKnownMarketplaces": {
+    "claude-code-workflows": {
+      "source": {
+        "source": "github",
+        "repo": "wshobson/agents"
+      }
+    }
   },
   "alwaysThinkingEnabled": true,
   "autoUpdatesChannel": "latest",
-  "voiceEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
-  "includeGitInstructions": false,
+  "voiceEnabled": true,
   "autoInstallIdeExtension": false
 }

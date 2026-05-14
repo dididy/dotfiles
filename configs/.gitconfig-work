@@ -1,0 +1,4 @@
+[user]
+    name = YONGJAE LEE
+    email = dev.yongjaelee@snowcorp.com
+# signingkey: machine-local — set in ~/.gitconfig.local

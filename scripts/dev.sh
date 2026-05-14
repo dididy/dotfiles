@@ -66,7 +66,9 @@ fi
 
 # ── pyenv + Python ──
 info "Installing pyenv..."
-if command -v pyenv &>/dev/null; then
+# Check both: pyenv on PATH OR ~/.pyenv directory present (PATH might not be
+# loaded yet in this non-interactive shell, but the install would still be there).
+if command -v pyenv &>/dev/null || [ -x "$HOME/.pyenv/bin/pyenv" ]; then
   info "pyenv already installed"
 else
   if $DRY_RUN; then
@@ -177,25 +179,19 @@ else
 fi
 
 # ── rtk (Claude Code hook for LLM token savings) ──
+# rtk ≥0.40 registers the hook in-place (settings.json calls `rtk hook claude`)
+# instead of writing a wrapper script. claude-settings.json reflects that.
 info "Checking rtk hook setup..."
 if $DRY_RUN; then
   info "[dry-run] Skipping rtk init --global"
 elif command -v rtk &>/dev/null; then
   if rtk init --global; then
-    if [ -f "$HOME/.claude/hooks/rtk-rewrite.sh" ]; then
-      info "rtk hook registered (restart Claude Code to activate)"
-    else
-      error "rtk init succeeded but ~/.claude/hooks/rtk-rewrite.sh is missing"
-      error "claude-settings.json references this file — Claude Code will fail to load it"
-      exit 1
-    fi
+    info "rtk hook registered (restart Claude Code to activate)"
   else
-    error "rtk init failed — fix this before continuing or remove the rtk-rewrite.sh hook from configs/claude-settings.json"
-    exit 1
+    warn "rtk init failed — Claude Code will run without RTK compression; not blocking install"
   fi
 else
-  warn "rtk not installed yet — run brew bundle first"
-  exit 1
+  warn "rtk not installed (brew bundle should have it) — skipping"
 fi
 
 # ── agent-browser (Vercel Labs) ──

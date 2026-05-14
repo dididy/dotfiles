@@ -30,13 +30,19 @@ max_file_size = 1048576
 
 [telemetry]
 enabled = true
+consent_given = true
+consent_date = "2026-05-14T05:06:44.178573+00:00"
 
 [hooks]
-# Commands whose output should NOT be auto-rewritten by rtk's hook.
-# This list mirrors the RTK README's recommended example
-# (https://github.com/rtk-ai/rtk — see "exclude_commands" in the config section).
-# - curl: RTK ships a dedicated `rtk curl` command for explicit invocation;
-#         auto-rewriting plain curl tends to mangle response bodies that
-#         agents need to inspect verbatim.
-# - playwright: full failure logs are needed for debugging E2E tests.
-exclude_commands = ["curl", "playwright"]
+exclude_commands = [
+    "curl",
+    "playwright",
+]
+transparent_prefixes = []
+
+[limits]
+grep_max_results = 200
+grep_max_per_file = 25
+status_max_files = 15
+status_max_untracked = 10
+passthrough_max_chars = 2000

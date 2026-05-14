@@ -14,6 +14,17 @@ source "$(cd "$(dirname "$0")" && pwd)/lib/common.sh"
 
 LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 
+# Same ownership guard as in macos.sh (kept here too since services.sh can be
+# run standalone). See macos.sh for the rationale.
+if [ -d "$LAUNCH_AGENTS_DIR" ] && [ ! -w "$LAUNCH_AGENTS_DIR" ]; then
+  if $DRY_RUN; then
+    info "[dry-run] sudo chown -R $(whoami):staff $LAUNCH_AGENTS_DIR"
+  else
+    warn "$LAUNCH_AGENTS_DIR is not writable — fixing ownership (sudo)"
+    sudo chown -R "$(whoami):staff" "$LAUNCH_AGENTS_DIR"
+  fi
+fi
+
 install_agent() {
   local label="$1"
   local plist_src="$2"

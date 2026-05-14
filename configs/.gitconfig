@@ -2,6 +2,7 @@
     editor = code --wait
     autocrlf = input
     pager = delta
+	excludesfile = /Users/user/.gitignore_global
 
 [interactive]
     diffFilter = delta --color-only
@@ -41,6 +42,21 @@
 [include]
     path = ~/.gitconfig-personal
 
-# ~/work/ 하위에서만 회사 계정으로 덮어쓰기
-[includeIf "gitdir:~/work/"]
+# Remote URL 기반 분기 — repo 위치와 무관하게 사내 호스트면 회사 계정 덮어쓰기.
+# (git 2.36+ 필요.) 새 repo는 remote가 붙기 전까지 personal로 잡히지만
+# remote 추가 즉시 분기 적용된다.
+# 패턴은 fnmatch 기반: ** 가 path separator 포함 매칭. 다양한 URL 형식 커버.
+[includeIf "hasconfig:remote.*.url:https://**oss.navercorp.com/**"]
     path = ~/.gitconfig-work
+[includeIf "hasconfig:remote.*.url:git@**oss.navercorp.com:**"]
+    path = ~/.gitconfig-work
+[includeIf "hasconfig:remote.*.url:ssh://**oss.navercorp.com/**"]
+    path = ~/.gitconfig-work
+
+# Machine-local overrides (gitignored). Use this file for signingkey and any
+# other per-machine values. Loaded LAST so it always wins.
+# Example contents:
+#   [user]
+#       signingkey = ~/.ssh/id_ed25519.pub
+[include]
+    path = ~/.gitconfig.local

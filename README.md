@@ -2,19 +2,34 @@
 
 My opinionated macOS dev setup. Three goals: AI-assisted by default (Claude Code, opencode, hermes-agent, codex CLI side-by-side), remote access via Tailscale (private mesh, no public ports) with both OpenSSH and Tailscale SSH enabled side-by-side, and reproducible (idempotent scripts, `--dry-run`, CI-checked with shellcheck + `bash -n` + Brewfile validation + bats).
 
-Clone and run `install.sh`. It'll ask for confirmation before starting, then prompt for git name/email when it gets there.
+Run `bootstrap.sh` (one curl line on a fresh Mac) or clone + `./install.sh`
+manually. Either way it asks for confirmation before doing anything, then
+prompts for git name/email when it gets to that step.
 
-## Quick start
+## Quick start (fresh machine, one-shot)
 
 ```bash
-git clone --recurse-submodules https://github.com/voidmatcha/dotfiles.git ~/dotfiles
+curl -fsSL https://raw.githubusercontent.com/voidmatcha/dotfiles/main/bootstrap.sh | bash
+```
+
+`bootstrap.sh` installs Xcode Command Line Tools if `git` is missing, clones
+this repo (with submodules) into `~/dotfiles`, and hands off to `./install.sh`.
+The `--recurse-submodules` step pulls the optional `company/` overlay if you
+have access to the internal git host; without access the submodule clone
+fails silently and `install.sh` proceeds normally.
+
+Pass-through args work too:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/voidmatcha/dotfiles/main/bootstrap.sh | bash -s -- --dry-run
+```
+
+## Quick start (already cloned)
+
+```bash
 cd ~/dotfiles
 ./install.sh
 ```
-
-The `--recurse-submodules` flag pulls the optional `company/` overlay if you
-have access to the internal git host; without access the submodule clone fails
-silently and the public `install.sh` proceeds normally.
 
 ## What gets installed
 
@@ -44,15 +59,16 @@ silently and the public `install.sh` proceeds normally.
   - **serena** — semantic code intelligence
   - **linkedin** (`linkedin-scraper-mcp` via `uvx`) — LinkedIn profiles/companies/jobs (browser auth on first call). Excluded on internal NAVER machines — not yet security-reviewed.
   - **exa** — semantic web search + `web_fetch_exa` URL reader. Connects to Exa's hosted endpoint (`https://mcp.exa.ai/mcp`) anonymously — no API key needed for free-plan usage. Add `x-api-key` header (key from https://dashboard.exa.ai/) only if you hit the rate limit.
-  - GitHub Operations on the public dotfiles use the `gh` CLI directly. The company overlay adds two MCP servers (`github` for github.com and `github-enterprise` for `oss.navercorp.com`) since those are the security-reviewed paths internally — see `company/configs/AGENTS-naver.md`.
+  - **context7** — up-to-date library/framework docs lookup. Connects to Context7's hosted endpoint (`https://mcp.context7.com/mcp`) anonymously for basic usage. The company overlay sources `CONTEXT7_API_KEY` from `~/.company.secrets.env` to lift rate limits when working under `~/work/`.
+  - GitHub Operations on the public dotfiles use the `gh` CLI directly. The company overlay (if configured) can add a `github-enterprise` MCP for the corporate GitHub Enterprise host — see `company/configs/AGENTS-company.md`.
 
 **Shell** — Oh My Zsh with zsh-autosuggestions, zsh-syntax-highlighting, zsh-completions.
 
-**Git** — separate personal/work accounts via `includeIf`, each with its own SSH key. Commits and tags are SSH-signed by default (`gpg.format=ssh`, `commit.gpgsign=true`) using the same per-account key — register the public key as a Signing Key on GitHub to get a verified badge. A global `~/.gitignore_global` (symlink to `configs/.gitignore_global`) catches `.DS_Store`, editor leftovers, `.envrc`, `.env*`, etc., so individual repos don't have to.
+**Git** — separate personal/work accounts via `includeIf` with **remote-URL-based** routing (see "Separate Git accounts" below). Commits and tags are SSH-signed by default — register the public key as a Signing Key on GitHub to get a verified badge. A global `~/.gitignore_global` (symlink to `configs/.gitignore_global`) catches `.DS_Store`, editor leftovers, `.envrc`, `.env*`, etc., so individual repos don't have to.
 
 **Claude Code:**
-- Skills — agent-skills, clarify, code-review, e2e-skills, frontend-design, humanizer, im-not-ai, karpathy-guidelines, security-best-practices, superpowers, ui-skills, ultrawork
-- Plugins — ralph-loop (iterative autonomous dev loops), [codex@openai-codex](https://github.com/openai/codex-plugin-cc) (delegate to / review with Codex from inside Claude Code; pulls in `@openai/codex` CLI), superpowers, rust-analyzer-lsp, fakechat, vercel, session-report, claude-md-management (`/revise-claude-md` + `claude-md-improver` audit skill), hookify
+- Skills — agent-skills, ai-slop-cleaner, clarify, code-review, doc-coauthoring, e2e-skills, frontend-design, humanizer, im-not-ai, internal-comms, karpathy-guidelines, mcp-builder, project-session-manager (`/psm`), security-best-practices, skill-creator, ui-clone-skills, ultrawork, webapp-testing
+- Plugins — ralph-loop (iterative autonomous dev loops), [codex@openai-codex](https://github.com/openai/codex-plugin-cc) (delegate to / review with Codex from inside Claude Code; pulls in `@openai/codex` CLI), superpowers, rust-analyzer-lsp, fakechat, vercel, session-report, claude-md-management (`/revise-claude-md` + `claude-md-improver` audit skill), hookify, [claude-mem@thedotmack](https://github.com/thedotmack/claude-mem) (persistent memory + cross-session search), plus role-focused plugins from [wshobson/agents](https://github.com/wshobson/agents) marketplace (comprehensive-review, javascript-typescript, python-development, frontend-mobile-development, security-scanning, tdd-workflows, git-pr-workflows, error-debugging, ui-design, accessibility-compliance, content-marketing, seo-*)
 - Hooks — skill-eval (forced-eval prompt injection per Scott Spence pattern, ~84% activation rate), rtk-rewrite (auto-compresses Bash output, 60–90% token savings)
 - MCP — chrome-devtools (browser control via Chrome DevTools Protocol), serena (semantic code intelligence). Defined in `configs/mcp.json`; `scripts/claude.sh` reads that file and registers each entry via `claude mcp add-json --scope user` (writes to `~/.claude.json`, not the older `.mcp.json` symlink path).
 - Codex CLI — installed alongside via `codex@openai-codex`; `configs/codex/config.toml` enables the experimental `/goal` slash command (`[features].goals = true`, see https://developers.openai.com/codex/use-cases/follow-goals)
@@ -182,10 +198,45 @@ Preview without making changes:
 
 ## Separate Git accounts
 
-`~/personal/` repos → personal account
-`~/work/` repos → work account
+Account selection is **remote-URL-based**, not directory-based — a repo's
+location on disk doesn't matter, only its `remote.origin.url`:
 
-Run `git.sh` — it prompts for names and emails, with existing values pre-filled. Press Enter to keep them.
+- Remote matches the corporate git host → work account
+  (`~/.gitconfig-work`)
+- Anything else (or no remote yet) → personal account
+  (`~/.gitconfig-personal`)
+
+The exact host(s) that route to "work" live in `configs/.gitconfig`'s
+`includeIf "hasconfig:remote.*.url:..."` blocks (currently set for the
+maintainer's employer; fork and edit those patterns to match your own
+internal git host — `https://`, `git@`, and `ssh://` URL forms are
+each their own line). Requires **git 2.36+**.
+
+The two account files (`configs/.gitconfig-personal` and `.gitconfig-work`)
+carry only `user.name` and `user.email`. SSH `signingkey` paths are
+**machine-specific** so they live in `~/.gitconfig.local` (gitignored),
+with an optional `~/.gitconfig.local-work` for a separate work-account
+signing key. `configs/.gitconfig` loads `~/.gitconfig.local` last, so it
+always wins for signing/keys.
+
+Run `git.sh` — it prompts for names and emails, then writes the two
+account configs plus `~/.gitconfig.local` (default signing key path) and
+`~/.gitconfig.local-work` (work signing key path).
+
+### Where to put company repos: `~/work/`
+
+Git identity routes by remote URL (above), but **MCP loading routes by
+directory**. The company overlay writes its MCP config to
+`~/work/.mcp.json` (project scope), and Claude Code picks it up only when
+started inside `~/work/<repo>/`. So:
+
+- **Keep company repos under `~/work/`** → company MCP servers
+  (e.g. `github-enterprise`) auto-load on top of the personal set, and the
+  overlay provides `CONTEXT7_API_KEY` to lift `context7` rate limits.
+- Any other location → personal MCP only (`exa`, `linkedin`, `context7` — anon).
+  Git author/signing still routes correctly via remote URL.
+
+`git.sh` creates `~/work/` and `~/personal/` for you.
 
 ## SSH keys
 

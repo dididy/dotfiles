@@ -57,7 +57,7 @@ are `scripts/dev.sh`, `Brewfile`, and `configs/mcp.json`.
   `.zshrc` injects serena's system-prompt-override automatically to counter
   Opus 4.7's strong bias toward built-in tools. https://github.com/oraios/serena
 - **graphify** (`/graphify`) — see "code" section. https://github.com/safishamsi/graphify
-- **defuddle**, **Jina Reader**, **Exa MCP**, **agent-browser**,
+- **defuddle** (invoked via `npx`, no pre-install), **Jina Reader** (hosted, no install), **Exa MCP**, **agent-browser**,
   **chrome-devtools MCP** — see routing tables above.
 - **yt-dlp**, **bird** (twitter-cli), **rdt** (rdt-cli), **feedparser**,
   **linkedin MCP** — see platform table above.
@@ -66,6 +66,9 @@ are `scripts/dev.sh`, `Brewfile`, and `configs/mcp.json`.
   use `rtk proxy <cmd>` (or run outside the hook path) when you need raw output.
 - **ccusage** — `ccusage` CLI for analyzing your token usage from local JSONL.
 - **wrangler** — Cloudflare Workers/Pages/R2/D1 CLI. `wrangler login` once.
+- **context7** (MCP) — up-to-date library/framework docs lookup. Public host
+  (`mcp.context7.com`) works anonymously; company overlay sets
+  `CONTEXT7_API_KEY` from `~/.company.secrets.env` to lift rate limits.
 
 ## Hard rules
 

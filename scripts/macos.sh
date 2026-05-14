@@ -40,6 +40,17 @@ run_defaults write NSGlobalDomain NSAutomaticCapitalizationEnabled -bool false
 # CapsLock → Escape (persistent via hidutil + LaunchAgent)
 info "Mapping CapsLock → Escape..."
 LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
+# Some setups end up with ~/Library/LaunchAgents owned by root (e.g. from a
+# prior `sudo ./install.sh` mistake, or a third-party installer that ran as
+# root). In that state we can't write our plists. Fix it once with sudo.
+if [ -d "$LAUNCH_AGENTS_DIR" ] && [ ! -w "$LAUNCH_AGENTS_DIR" ]; then
+  if $DRY_RUN; then
+    info "[dry-run] sudo chown -R $(whoami):staff $LAUNCH_AGENTS_DIR"
+  else
+    warn "$LAUNCH_AGENTS_DIR is not writable — fixing ownership (sudo)"
+    sudo chown -R "$(whoami):staff" "$LAUNCH_AGENTS_DIR"
+  fi
+fi
 if ! $DRY_RUN; then
   mkdir -p "$LAUNCH_AGENTS_DIR"
   cat > "$LAUNCH_AGENTS_DIR/com.user.capslock-escape.plist" << 'PLIST'
@@ -84,6 +95,28 @@ run_defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 61 \
 # Apply shortcut changes immediately
 if ! $DRY_RUN; then
   /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
+fi
+
+# Input sources: ensure ABC + Korean 2-Set are both enabled so Cmd+Space has
+# something to toggle between. The shortcut above is a no-op when only one
+# source is registered. We touch HIToolbox's enabled-sources array idempotently
+# (only writing if Korean is absent) so re-running is safe.
+if ! $DRY_RUN; then
+  if ! defaults read com.apple.HIToolbox AppleEnabledInputSources 2>/dev/null \
+        | grep -q "com.apple.inputmethod.Korean.2SetKorean"; then
+    info "Adding Korean 2-Set to enabled input sources"
+    /usr/libexec/PlistBuddy -c "Add :AppleEnabledInputSources: dict" \
+      ~/Library/Preferences/com.apple.HIToolbox.plist 2>/dev/null || true
+    /usr/libexec/PlistBuddy \
+      -c "Add :AppleEnabledInputSources:0:\"Bundle ID\" string com.apple.inputmethod.Korean" \
+      -c "Add :AppleEnabledInputSources:0:\"Input Mode\" string com.apple.inputmethod.Korean.2SetKorean" \
+      -c "Add :AppleEnabledInputSources:0:InputSourceKind string \"Input Mode\"" \
+      ~/Library/Preferences/com.apple.HIToolbox.plist 2>/dev/null \
+      || warn "Failed to add Korean input source — add it manually in System Settings > Keyboard > Input Sources"
+    warn "Korean input source added — log out/in (or restart) for Cmd+Space toggle to start working"
+  else
+    info "Korean input source already enabled ✓"
+  fi
 fi
 
 # ── Trackpad ──

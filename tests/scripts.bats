@@ -9,13 +9,13 @@ setup() {
   while IFS= read -r f; do
     run bash -n "$f"
     [ "$status" -eq 0 ] || { echo "syntax error in $f: $output"; return 1; }
-  done < <(find "$REPO_ROOT/scripts" "$REPO_ROOT/install.sh" -type f -name "*.sh")
+  done < <(find "$REPO_ROOT/scripts" "$REPO_ROOT/install.sh" "$REPO_ROOT/bootstrap.sh" -type f -name "*.sh")
 }
 
 @test "every script uses set -euo pipefail" {
   while IFS= read -r f; do
     grep -q "set -euo pipefail" "$f" || { echo "missing set -euo pipefail: $f"; return 1; }
-  done < <(find "$REPO_ROOT/scripts" "$REPO_ROOT/install.sh" -type f -name "*.sh" -not -path "*/lib/*")
+  done < <(find "$REPO_ROOT/scripts" "$REPO_ROOT/install.sh" "$REPO_ROOT/bootstrap.sh" -type f -name "*.sh" -not -path "*/lib/*")
 }
 
 @test "Brewfile parses (brew bundle list)" {
