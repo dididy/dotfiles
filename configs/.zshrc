@@ -61,6 +61,12 @@ if command -v serena &>/dev/null && command -v claude &>/dev/null; then
   }
 fi
 
+# ── User-local secrets (optional, gitignored everywhere) ──
+# Loaded if present. Use this for API keys (EXA_API_KEY when paid plan,
+# OPENAI_API_KEY for local scripts, etc.). Most MCP servers in this dotfiles
+# run keyless on free tiers, so this file is optional.
+[ -f "$HOME/.dev.secrets.env" ] && . "$HOME/.dev.secrets.env"
+
 # ── Company-local secrets (optional) ──
 # Loaded if present; managed by the company overlay (see dotfiles/company/).
 [ -f "$HOME/.company.secrets.env" ] && . "$HOME/.company.secrets.env"

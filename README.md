@@ -32,6 +32,19 @@ silently and the public `install.sh` proceeds normally.
 - [serena](https://github.com/oraios/serena) — MCP server for semantic code navigation (LSP-backed). Installed via `uv tool install`, registered in `configs/mcp.json` with `--context claude-code --project-from-cwd`. `.zshrc` wraps `claude` to inject serena's system-prompt-override (counters Opus 4.7 bias toward built-in tools)
 - [graphify](https://github.com/safishamsi/graphify) — Claude Code skill (`/graphify`) that turns any folder into a queryable knowledge graph. Installed via `pip install --user graphifyy && graphify install`
 - [wrangler](https://developers.cloudflare.com/workers/wrangler/) — Cloudflare Workers/Pages/R2/D1 CLI
+- Social / web read CLIs (subset of what [agent-reach](https://github.com/Panniantong/Agent-Reach) bundles, installed directly to keep the dependency surface small):
+  - `yt-dlp` — YouTube/Bilibili/1800+ sites, metadata + subtitles, no auth
+  - `bird` (twitter-cli, via pipx) — X/Twitter read/search/timeline; `bird login` once for cookie capture
+  - `rdt` (rdt-cli, via pipx) — Reddit search/read; `rdt login` once (Reddit requires auth since 2024)
+  - `feedparser` (Python lib) — RSS/Atom feeds (blog/YouTube channel/GitHub releases/Hacker News etc.)
+  - For any other URL, `curl https://r.jina.ai/<URL>` returns clean Markdown (Jina Reader, no install)
+  - See `configs/AGENTS.md` for exact one-liners agents should call.
+- MCP servers wired up by `configs/mcp.json` (registered via `claude mcp add-json --scope user`):
+  - **chrome-devtools** — browser control
+  - **serena** — semantic code intelligence
+  - **linkedin** (`linkedin-scraper-mcp` via `uvx`) — LinkedIn profiles/companies/jobs (browser auth on first call). Excluded on internal NAVER machines — not yet security-reviewed.
+  - **exa** — semantic web search + `web_fetch_exa` URL reader. Connects to Exa's hosted endpoint (`https://mcp.exa.ai/mcp`) anonymously — no API key needed for free-plan usage. Add `x-api-key` header (key from https://dashboard.exa.ai/) only if you hit the rate limit.
+  - GitHub Operations on the public dotfiles use the `gh` CLI directly. The company overlay adds two MCP servers (`github` for github.com and `github-enterprise` for `oss.navercorp.com`) since those are the security-reviewed paths internally — see `company/configs/AGENTS-naver.md`.
 
 **Shell** — Oh My Zsh with zsh-autosuggestions, zsh-syntax-highlighting, zsh-completions.
 

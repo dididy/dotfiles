@@ -35,7 +35,8 @@ SKILL_REPOS=(
   "blader/humanizer"
   "epoko77-ai/im-not-ai"
   "forrestchang/andrej-karpathy-skills@karpathy-guidelines"
-  "obra/superpowers"
+  # obra/superpowers: removed — already installed via `superpowers@claude-plugins-official`
+  # plugin (which pins to a tested sha, more stable than tracking main).
   "vercel-labs/agent-skills"
   "anthropics/skills@frontend-design"
   "supercent-io/skills-template@security-best-practices"
@@ -143,13 +144,26 @@ register_mcp_from_file() {
     return 0
   fi
 
+  # Load dev/user secrets so any ${VAR} placeholders in mcp.json expand below.
+  # ~/.dev.secrets.env is gitignored (*.secrets.env in .gitignore).
+  # Public mcp.json currently has no ${VAR} placeholders, but this keeps the
+  # door open for adding entries that need keys later without code changes.
+  if [ -f "$HOME/.dev.secrets.env" ]; then
+    # shellcheck source=/dev/null
+    set -a; . "$HOME/.dev.secrets.env"; set +a
+  fi
+
   local names
   names=$(jq -r '.mcpServers | keys[]' "$mcp_file" 2>/dev/null)
   while IFS= read -r name; do
     [ -z "$name" ] && continue
     local entry
     # Use --arg to safely pass the key (avoids jq filter string-interpolation injection).
-    entry=$(jq -c --arg n "$name" '.mcpServers[$n]' "$mcp_file")
+    # envsubst expands ${VAR} with an explicit allowlist; anything else stays
+    # as a literal $VAR. Missing key → empty string (JSON still valid).
+    # Extend the allowlist as new keys are added to mcp.json.
+    entry=$(jq -c --arg n "$name" '.mcpServers[$n]' "$mcp_file" \
+      | envsubst '${EXA_API_KEY}')
     if $DRY_RUN; then
       info "[dry-run] claude mcp add-json --scope user $name '$entry'"
       continue

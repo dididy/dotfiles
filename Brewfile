@@ -30,6 +30,8 @@ brew "vercel-cli"               # Vercel deployment CLI
 brew "postgresql"               # PostgreSQL database
 brew "mole"
 brew "bats-core"                # Bash Automated Testing System
+brew "pipx"                     # isolated Python CLI installer (used for twitter-cli, rdt-cli)
+brew "yt-dlp"                   # YouTube/Bilibili/1800+ sites — metadata + subtitle extraction
 brew "anomalyco/tap/opencode"   # AI coding agent (third-party tap; tracks latest)
 brew "code-server"              # VS Code in browser (auto-launched via LaunchAgent)
 brew "docker"                   # docker CLI only (no Docker Desktop). Pair with Rancher Desktop or similar engine on hosts with licensing restrictions.

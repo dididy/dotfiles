@@ -48,39 +48,39 @@ if [[ "$confirm" != [yY] ]]; then
 fi
 
 # ── 1. Homebrew ──
-info "1/11 Installing Homebrew & apps..."
+info "1/12 Installing Homebrew & apps..."
 bash "$DOTFILES_DIR/scripts/brew.sh"
 
 # ── 2. macOS settings ──
-info "2/11 Applying macOS system settings..."
+info "2/12 Applying macOS system settings..."
 bash "$DOTFILES_DIR/scripts/macos.sh"
 
 # ── 3. Dev environment ──
-info "3/11 Setting up dev environment..."
+info "3/12 Setting up dev environment..."
 bash "$DOTFILES_DIR/scripts/dev.sh"
 
 # ── 4. Shell ──
-info "4/11 Configuring shell environment..."
+info "4/12 Configuring shell environment..."
 bash "$DOTFILES_DIR/scripts/shell.sh"
 
 # ── 5. Git ──
-info "5/11 Configuring Git..."
+info "5/12 Configuring Git..."
 bash "$DOTFILES_DIR/scripts/git.sh"
 
 # ── 6. Claude Code ──
-info "6/11 Setting up Claude Code..."
+info "6/12 Setting up Claude Code..."
 bash "$DOTFILES_DIR/scripts/claude.sh"
 
 # ── 7. opencode ──
-info "7/11 Setting up opencode..."
+info "7/12 Setting up opencode..."
 bash "$DOTFILES_DIR/scripts/opencode.sh"
 
 # ── 8. Hermes Agent ──
-info "8/11 Setting up Hermes Agent..."
+info "8/12 Setting up Hermes Agent..."
 bash "$DOTFILES_DIR/scripts/hermes.sh"
 
 # ── 9. Symlinks ──
-info "9/11 Creating dotfiles symlinks..."
+info "9/12 Creating dotfiles symlinks..."
 
 link_file "$DOTFILES_DIR/configs/.zshrc"              "$HOME/.zshrc"
 link_file "$DOTFILES_DIR/configs/.tmux.conf"          "$HOME/.tmux.conf"
@@ -120,16 +120,40 @@ mkdir -p "$RTK_CONFIG_DIR"
 link_file "$DOTFILES_DIR/configs/rtk-config.toml"     "$RTK_CONFIG_DIR/config.toml"
 
 # ── 10. Tailscale + Tailscale SSH ──
-info "10/11 Setting up Tailscale (incl. Tailscale SSH)..."
+info "10/12 Setting up Tailscale (incl. Tailscale SSH)..."
 bash "$DOTFILES_DIR/scripts/tailscale.sh"
 
 # ── 11. purplemux + code-server services ──
-info "11/11 Installing purplemux + code-server LaunchAgents..."
+info "11/12 Installing purplemux + code-server LaunchAgents..."
 bash "$DOTFILES_DIR/scripts/services.sh"
 
 echo ""
 info "Done."
 info "Restart your terminal or run 'source ~/.zshrc'."
+
+# ── Manual one-time login flows (interactive — surface clear instructions) ──
+echo ""
+warn "=== One-time login flows for social-platform CLIs ==="
+warn "These open a browser to capture cookies — run them once after install:"
+if command -v bird &>/dev/null && [ ! -f "$HOME/.config/twitter-cli/cookies.json" ] && [ ! -f "$HOME/.twitter-cli/cookies.json" ]; then
+  warn "  bird login   # X/Twitter cookie capture"
+else
+  info "  bird login   # (already logged in or not installed)"
+fi
+if command -v rdt &>/dev/null && [ ! -f "$HOME/.config/rdt-cli/cookies.json" ] && [ ! -f "$HOME/.rdt-cli/cookies.json" ]; then
+  warn "  rdt login    # Reddit cookie capture (required since 2024)"
+else
+  info "  rdt login    # (already logged in or not installed)"
+fi
+warn "yt-dlp needs no login; Jina Reader (curl https://r.jina.ai/<URL>) needs no install."
+info ""
+info "=== Optional API keys (~/.dev.secrets.env) ==="
+info "  Exa MCP currently runs anonymously via the hosted endpoint —"
+info "  no key needed. If you hit the free-plan rate limit (HTTP 429),"
+info "  get a key at https://dashboard.exa.ai/ and re-register the server"
+info "  with a header: claude mcp add --transport http -H 'x-api-key: ...' exa https://mcp.exa.ai/mcp"
+info "  GitHub Operations on the public dotfiles use 'gh' CLI directly."
+info "  The company overlay (if active) adds GitHub MCP servers — see company/AGENTS-naver.md."
 
 # ── 회사용 overlay (옵션, git submodule) ──
 # company/ 는 git submodule로 별도의 사내 git 저장소에 호스팅된다.

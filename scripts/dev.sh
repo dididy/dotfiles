@@ -235,6 +235,50 @@ else
   fi
 fi
 
+# ── feedparser (RSS/Atom parser, Python lib used inline by agents) ──
+info "Checking feedparser..."
+if $DRY_RUN; then
+  info "[dry-run] pip install --user feedparser"
+elif python3 -c "import feedparser" 2>/dev/null; then
+  info "feedparser already installed"
+else
+  pip install --user feedparser 2>/dev/null || warn "feedparser install failed — try: pip install --user feedparser"
+fi
+
+# ── Social-platform read tools (subset of what agent-reach bundles) ──
+# Install the upstream CLIs directly. See configs/AGENTS.md for the one-liners
+# agents should call.
+# - yt-dlp: YouTube/Bilibili/1800+ sites — installed via Brewfile (no auth)
+# - bird (twitter-cli): X/Twitter via cookie auth — `bird search/read/user-tweets`
+# - rdt-cli: Reddit via cookie auth — `rdt search/read`
+for tool_pkg in "twitter-cli" "rdt-cli"; do
+  case "$tool_pkg" in
+    twitter-cli) cli="bird" ;;
+    rdt-cli)     cli="rdt"  ;;
+  esac
+  info "Checking $cli ($tool_pkg)..."
+  if $DRY_RUN; then
+    info "[dry-run] pipx install $tool_pkg"
+  elif command -v "$cli" &>/dev/null; then
+    info "$cli already installed"
+  elif command -v pipx &>/dev/null; then
+    pipx install "$tool_pkg" 2>/dev/null || warn "$tool_pkg install failed — try: pipx install $tool_pkg"
+  else
+    warn "pipx not installed — skipping $tool_pkg. Install pipx first (brew install pipx)"
+  fi
+done
+
+# Initial cookie-login flow — interactive, must be run by the user manually.
+# We surface a clear reminder rather than blocking install.sh.
+if ! $DRY_RUN; then
+  if command -v bird &>/dev/null && [ ! -f "$HOME/.config/twitter-cli/cookies.json" ] && [ ! -f "$HOME/.twitter-cli/cookies.json" ]; then
+    warn "bird (twitter-cli) installed but not logged in — run: bird login   (opens browser to capture x.com cookie)"
+  fi
+  if command -v rdt &>/dev/null && [ ! -f "$HOME/.config/rdt-cli/cookies.json" ] && [ ! -f "$HOME/.rdt-cli/cookies.json" ]; then
+    warn "rdt (rdt-cli) installed but not logged in — run: rdt login   (opens browser to capture reddit cookie)"
+  fi
+fi
+
 # ── wrangler (Cloudflare Workers/Pages/R2/D1 CLI) ──
 info "Checking wrangler..."
 if $DRY_RUN; then
