@@ -64,6 +64,7 @@ EOF
 }
 
 @test "company install.sh writes ~/work/.mcp.json (project scope), not user scope" {
+  [ -f "$REPO_ROOT/company/install.sh" ] || skip "company overlay not present"
   grep -q '~/work/.mcp.json\|"$HOME/work/.mcp.json"' "$REPO_ROOT/company/install.sh" \
     || { echo "company install.sh should target ~/work/.mcp.json"; return 1; }
   # Negative assertion: we should NOT see a `claude mcp add-json --scope user`
